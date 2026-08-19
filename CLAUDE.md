@@ -17,6 +17,16 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
 - `getDoc`/`getHistory`/`getZoom` que se pasan a `ui/interaction.js` son siempre
   funciones (no valores), precisamente para poder cambiar de fotograma o de zoom
   sin tener que tocar ni las herramientas ni el binding de eventos de puntero.
+- `main.js` es solo el punto de composición: busca elementos del DOM, crea cada
+  subsistema de `ui/` (sidebar, zoom, color, herramientas, capas, timeline,
+  exportar...) y los conecta con un único `redraw()`. Cada subsistema sigue el
+  mismo patrón `createX(elementos, opciones) → API` (normalmente getters) que
+  ya usaban `ui/palette.js`/`ui/toolbar.js`. Si `main.js` empieza a crecer otra
+  vez, el sitio para meter la lógica nueva es un módulo de `ui/`, no el propio
+  `main.js`.
+- Orden de inicialización importante: `ui/sidebarDock.js` debe crearse (y
+  restaurar su estado) antes que `ui/zoomControls.js`, porque el zoom de ajuste
+  depende del hueco que deja la sidebar en pantalla.
 
 ## Estructura
 /core     -> document.js (+ comandos de capas: añadir/quitar/mover/ocultar), layer.js
@@ -27,8 +37,13 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
 /tools    -> pencil.js, eraser.js, bucket.js, paintTool.js (trazo compartido por lápiz y goma),
              shapeTool.js (motor compartido por line.js/rectangle.js/ellipse.js),
              eyedropper.js, selection.js (selección rectangular + mover)
-/ui       -> canvas.js, interaction.js, palette.js, toolbar.js, icons.js, colorPicker.js,
-             tooltip.js, layersPanel.js, timeline.js, theme.css
+/ui       -> canvas.js, interaction.js, icons.js, tooltip.js, theme.css (base del tema),
+             palette.js, colorPicker.js, colorControls.js (junta las dos anteriores + persistencia),
+             toolbar.js, toolSetup.js (herramientas + atajos + botón de borrar),
+             paintOptions.js (grosor de pincel + espejo), layersPanel.js, timeline.js,
+             sidebarDock.js (acople + resize de la barra lateral), zoomControls.js,
+             canvasResizeControls.js, exportControls.js, storage.js (todo el localStorage:
+             proyecto/autoguardado, colores personalizados, estado de la sidebar)
 /tests
 
 ## Convenciones
