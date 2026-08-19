@@ -9,11 +9,13 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
 - Las herramientas son módulos con la misma interfaz: onPointerDown/Move/Up.
 - Toda mutación del documento pasa por el sistema de comandos (undo/redo).
   Nada modifica píxeles directamente desde la UI.
+- Contrato de comando (core/history.js): objeto { do(doc), undo(doc) }.
+  execute(history, doc, command) lo aplica y limpia la pila de redo.
 
 ## Estructura
 /core     -> document.js, layer.js, history.js
-/tools    -> pencil.js, eraser.js, bucket.js
-/ui       -> canvas.js, palette.js, layerPanel.js
+/tools    -> pencil.js, eraser.js, bucket.js, paintTool.js (trazo compartido por lápiz y goma)
+/ui       -> canvas.js, interaction.js, palette.js, toolbar.js, layerPanel.js
 /tests
 
 ## Convenciones
