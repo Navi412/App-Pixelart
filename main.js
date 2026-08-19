@@ -3,10 +3,12 @@ import { createClearLayerCommand } from './core/layer.js';
 import { createProject, getActiveFrame } from './core/project.js';
 import { render } from './ui/canvas.js';
 import { bindPointerEvents } from './ui/interaction.js';
-import { loadProject, createAutosaveScheduler } from './ui/storage.js';
+import { getActiveProjectId, setActiveProjectId, loadProjectData, createProjectEntry, createAutosaveScheduler } from './ui/storage.js';
 import { createSidebarDock } from './ui/sidebarDock.js';
 import { createZoomControls } from './ui/zoomControls.js';
 import { createCanvasResizeControls } from './ui/canvasResizeControls.js';
+import { createProjectSwitcher } from './ui/projectSwitcher.js';
+import { createImportControls } from './ui/importControls.js';
 import { createColorControls } from './ui/colorControls.js';
 import { createPaintOptions } from './ui/paintOptions.js';
 import { createToolSetup } from './ui/toolSetup.js';
@@ -29,11 +31,17 @@ createSidebarDock({
   dockToggleButton: document.getElementById('dock-toggle'),
 });
 
-// --- Proyecto (fotogramas de animación) + autoguardado ---
+// --- Proyecto activo (puede haber varios guardados) + autoguardado ---
 
-const project = loadProject() || createProject(32, 32);
+let activeProjectId = getActiveProjectId();
+const project = (activeProjectId && loadProjectData(activeProjectId)) || createProject(32, 32);
+if (!activeProjectId) {
+  activeProjectId = createProjectEntry('Proyecto 1');
+  setActiveProjectId(activeProjectId);
+}
+
 const currentFrame = () => getActiveFrame(project);
-const autosave = createAutosaveScheduler(() => project);
+const autosave = createAutosaveScheduler(() => activeProjectId, () => project);
 
 // --- Zoom ---
 
@@ -61,6 +69,37 @@ createCanvasResizeControls({
     timeline.refreshAll();
     zoomControls.setZoom(zoomControls.computeFitZoom());
   },
+});
+
+// --- Varios proyectos ---
+
+createProjectSwitcher({
+  toggleButton: document.getElementById('project-toggle'),
+  panelEl: document.getElementById('project-panel'),
+  nameInput: document.getElementById('project-name'),
+  listEl: document.getElementById('project-list'),
+  createButton: document.getElementById('project-create'),
+  deleteButton: document.getElementById('project-delete'),
+  project,
+  getActiveId: () => activeProjectId,
+  setActiveId: (id) => {
+    activeProjectId = id;
+  },
+  onSwitch: () => {
+    timeline.refreshAll();
+    layersPanel.refresh();
+    zoomControls.setZoom(zoomControls.computeFitZoom());
+    redraw();
+  },
+});
+
+// --- Importar imagen ---
+
+createImportControls({
+  button: document.getElementById('import-image'),
+  fileInput: document.getElementById('import-file'),
+  getCurrentFrame: currentFrame,
+  onImported: () => redraw(),
 });
 
 // --- Color ---

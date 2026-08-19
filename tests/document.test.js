@@ -85,3 +85,35 @@ test('createToggleLayerVisibilityCommand alterna la visibilidad y undo la revier
   undo(history, doc);
   assert.equal(doc.layers[0].visible, true);
 });
+
+test('createAddLayerCommand con píxeles iniciales crea la capa ya rellena', () => {
+  const doc = createDocument(2, 2);
+  const history = createHistory();
+  const pixels = new Uint8ClampedArray(2 * 2 * 4);
+  pixels.set([255, 0, 0, 255], 0);
+
+  execute(history, doc, createAddLayerCommand(pixels));
+
+  assert.deepEqual(getPixel(doc.layers[1], 2, 0, 0), RED);
+});
+
+test('createAddLayerCommand sin argumento sigue creando una capa vacía', () => {
+  const doc = createDocument(2, 2);
+  const history = createHistory();
+
+  execute(history, doc, createAddLayerCommand());
+
+  assert.deepEqual(getPixel(doc.layers[1], 2, 0, 0), { r: 0, g: 0, b: 0, a: 0 });
+});
+
+test('undo tras importar una imagen quita la capa igual que con una capa normal', () => {
+  const doc = createDocument(2, 2);
+  const history = createHistory();
+  const pixels = new Uint8ClampedArray(2 * 2 * 4);
+  pixels.set([255, 0, 0, 255], 0);
+
+  execute(history, doc, createAddLayerCommand(pixels));
+  undo(history, doc);
+
+  assert.equal(doc.layers.length, 1);
+});

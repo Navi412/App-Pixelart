@@ -1,35 +1,5 @@
 import { attachTooltip } from './tooltip.js';
-
-const BRUSH_SIZES = [1, 2, 3, 4];
-
-function createBrushSizeButtons(container) {
-  let brushSize = BRUSH_SIZES[0];
-  const buttons = [];
-
-  function update() {
-    for (const { size, button } of buttons) {
-      button.classList.toggle('is-pressed', size === brushSize);
-    }
-  }
-
-  for (const size of BRUSH_SIZES) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn';
-    button.textContent = String(size);
-    attachTooltip(button, { title: `Grosor ${size}px`, description: 'Ancho del pincel/goma' });
-    button.addEventListener('click', () => {
-      brushSize = size;
-      update();
-    });
-    container.appendChild(button);
-    buttons.push({ size, button });
-  }
-
-  update();
-
-  return () => brushSize;
-}
+import { createBrushSizeSlider } from './brushSizeSlider.js';
 
 function createMirrorButtons(container) {
   let horizontal = false;
@@ -61,7 +31,7 @@ function createMirrorButtons(container) {
 }
 
 export function createPaintOptions({ brushSizeEl, mirrorEl }) {
-  const getBrushSize = createBrushSizeButtons(brushSizeEl);
+  const getBrushSize = createBrushSizeSlider(brushSizeEl);
   const getMirror = createMirrorButtons(mirrorEl);
 
   return { getBrushSize, getMirror };

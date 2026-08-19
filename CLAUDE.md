@@ -27,12 +27,20 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
 - Orden de inicialización importante: `ui/sidebarDock.js` debe crearse (y
   restaurar su estado) antes que `ui/zoomControls.js`, porque el zoom de ajuste
   depende del hueco que deja la sidebar en pantalla.
+- Hay varios proyectos guardados en paralelo (`ui/storage.js`): un índice
+  `pixel-editor.projects` + los datos de cada uno bajo `pixel-editor.project.<id>`.
+  `main.js` mantiene `project` como una referencia **estable** que nunca se
+  reasigna — cambiar de proyecto activo muta ese mismo objeto en el sitio
+  (`core/project.js#applyProjectData`) precisamente para no tener que tocar los
+  módulos que ya leen `project` por referencia (`zoomControls`, `timeline`,
+  `exportControls`, `canvasResizeControls`).
 
 ## Estructura
-/core     -> document.js (+ comandos de capas: añadir/quitar/mover/ocultar), layer.js
+/core     -> document.js (+ comandos de capas: añadir/quitar/mover/ocultar, con
+             píxeles iniciales opcionales para importar imágenes), layer.js
              (+ resizeLayerPixels), history.js, color.js, shapes.js (geometría pura:
              línea/rectángulo/elipse), mirror.js (reflejo de celdas para dibujo con espejo),
-             project.js (fotogramas de animación + resizeProject),
+             project.js (fotogramas de animación + resizeProject + applyProjectData),
              serialize.js (proyecto <-> JSON para autoguardado)
 /tools    -> pencil.js, eraser.js, bucket.js, paintTool.js (trazo compartido por lápiz y goma),
              shapeTool.js (motor compartido por line.js/rectangle.js/ellipse.js),
@@ -40,10 +48,13 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
 /ui       -> canvas.js, interaction.js, icons.js, tooltip.js, theme.css (base del tema),
              palette.js, colorPicker.js, colorControls.js (junta las dos anteriores + persistencia),
              toolbar.js, toolSetup.js (herramientas + atajos + botón de borrar),
-             paintOptions.js (grosor de pincel + espejo), layersPanel.js, timeline.js,
+             paintOptions.js (junta grosor de pincel + espejo), brushSizeSlider.js
+             (barra arrastrable de grosor), layersPanel.js, timeline.js,
              sidebarDock.js (acople + resize de la barra lateral), zoomControls.js,
-             canvasResizeControls.js, exportControls.js, storage.js (todo el localStorage:
-             proyecto/autoguardado, colores personalizados, estado de la sidebar)
+             canvasResizeControls.js, projectSwitcher.js (crear/cambiar/renombrar/
+             eliminar proyectos), importControls.js (importar imagen como capa nueva),
+             exportControls.js, storage.js (todo el localStorage: proyectos/autoguardado,
+             colores personalizados, estado de la sidebar)
 /tests
 
 ## Convenciones

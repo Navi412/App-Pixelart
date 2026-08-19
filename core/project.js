@@ -47,6 +47,14 @@ export function removeFrame(project, index) {
   return true;
 }
 
+export function applyProjectData(project, data) {
+  project.width = data.width;
+  project.height = data.height;
+  project.frames = data.frames;
+  project.activeFrameIndex = data.activeFrameIndex;
+  project.fps = data.fps;
+}
+
 export function resizeProject(project, newWidth, newHeight) {
   for (const frame of project.frames) {
     frame.doc.layers = frame.doc.layers.map((layer) =>

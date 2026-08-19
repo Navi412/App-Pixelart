@@ -9,13 +9,16 @@ export function createDocument(width, height) {
   };
 }
 
-export function createAddLayerCommand() {
+export function createAddLayerCommand(initialPixels = null) {
   let newLayer = null;
   let previousActiveIndex = null;
 
   return {
     do(doc) {
-      if (newLayer === null) newLayer = createLayer(doc.width, doc.height, `Capa ${doc.layers.length + 1}`);
+      if (newLayer === null) {
+        newLayer = createLayer(doc.width, doc.height, `Capa ${doc.layers.length + 1}`);
+        if (initialPixels) newLayer.pixels.set(initialPixels);
+      }
       previousActiveIndex = doc.activeLayerIndex;
       doc.layers.push(newLayer);
       doc.activeLayerIndex = doc.layers.length - 1;

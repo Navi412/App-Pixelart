@@ -31,9 +31,20 @@
     <div class="sidebar">
       <div class="toolbar">
         <button type="button" id="dock-toggle" class="btn btn-icon"></button>
+        <button type="button" id="project-toggle" class="btn">Proyectos</button>
         <button type="button" id="resize-toggle" class="btn">Redimensionar</button>
+        <button type="button" id="import-image" class="btn">Importar imagen</button>
         <button type="button" id="export-png" class="btn">Exportar PNG</button>
         <button type="button" id="export-spritesheet" class="btn">Exportar spritesheet</button>
+      </div>
+      <input type="file" id="import-file" accept="image/*" hidden />
+      <div id="project-panel" class="project-panel">
+        <input type="text" id="project-name" placeholder="Nombre del proyecto" />
+        <div id="project-list" class="project-list"></div>
+        <div class="project-actions">
+          <button type="button" id="project-create" class="btn">+ Nuevo</button>
+          <button type="button" id="project-delete" class="btn">Eliminar</button>
+        </div>
       </div>
       <div id="resize-panel" class="resize-panel">
         <div class="resize-fields">
@@ -44,7 +55,7 @@
         <button type="button" id="resize-apply" class="btn">Aplicar</button>
       </div>
       <div id="toolbar" class="toolbar"></div>
-      <div id="brush-size" class="toolbar"></div>
+      <div id="brush-size"></div>
       <div id="mirror" class="toolbar"></div>
       <div class="panel color-panel">
         <div id="palette">
