@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProject, getActiveFrame, addFrame, duplicateFrame, removeFrame } from '../core/project.js';
+import { createProject, getActiveFrame, addFrame, duplicateFrame, removeFrame, resizeProject } from '../core/project.js';
 import { setPixel, getPixel } from '../core/layer.js';
 
 const RED = { r: 255, g: 0, b: 0, a: 255 };
@@ -71,4 +71,32 @@ test('cada fotograma tiene su propio historial independiente', () => {
   const project = createProject(4, 4);
   addFrame(project);
   assert.notEqual(project.frames[0].history, project.frames[1].history);
+});
+
+test('resizeProject actualiza el tamaño del proyecto y de todos los fotogramas', () => {
+  const project = createProject(4, 4);
+  addFrame(project);
+  setPixel(project.frames[0].doc.layers[0], 4, 1, 1, RED);
+
+  resizeProject(project, 8, 6);
+
+  assert.equal(project.width, 8);
+  assert.equal(project.height, 6);
+  for (const frame of project.frames) {
+    assert.equal(frame.doc.width, 8);
+    assert.equal(frame.doc.height, 6);
+  }
+  assert.deepEqual(getPixel(project.frames[0].doc.layers[0], 8, 1, 1), RED);
+});
+
+test('resizeProject al achicar recorta el contenido de todos los fotogramas', () => {
+  const project = createProject(8, 8);
+  setPixel(getActiveFrame(project).doc.layers[0], 8, 6, 6, RED);
+  setPixel(getActiveFrame(project).doc.layers[0], 8, 1, 1, RED);
+
+  resizeProject(project, 4, 4);
+
+  assert.equal(project.width, 4);
+  assert.equal(project.height, 4);
+  assert.deepEqual(getPixel(getActiveFrame(project).doc.layers[0], 4, 1, 1), RED);
 });

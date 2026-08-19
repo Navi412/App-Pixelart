@@ -436,3 +436,43 @@ canvas {
 .frame-thumb.is-selected {
   border-color: var(--accent);
 }
+
+/* Panel de redimensionar lienzo: mismo patrón "is-open" que el selector de color */
+.resize-panel {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.resize-panel.is-open {
+  display: flex;
+}
+
+.resize-fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+input[type='number'] {
+  width: 64px;
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  border: var(--border-width) solid;
+  border-top-color: var(--border-dark);
+  border-left-color: var(--border-dark);
+  border-bottom-color: var(--border-light);
+  border-right-color: var(--border-light);
+  -moz-appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

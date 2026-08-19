@@ -41,6 +41,20 @@ export function composeLayers(doc) {
   return out;
 }
 
+const ONION_SKIN_ALPHA = 0.35;
+
+function drawOnionSkin(ctx, onionSkinDoc, width, height, zoom) {
+  const composited = composeLayers(onionSkinDoc);
+  const offscreen = document.createElement('canvas');
+  offscreen.width = onionSkinDoc.width;
+  offscreen.height = onionSkinDoc.height;
+  offscreen.getContext('2d').putImageData(new ImageData(composited, onionSkinDoc.width, onionSkinDoc.height), 0, 0);
+
+  ctx.globalAlpha = ONION_SKIN_ALPHA;
+  ctx.drawImage(offscreen, 0, 0, onionSkinDoc.width, onionSkinDoc.height, 0, 0, width * zoom, height * zoom);
+  ctx.globalAlpha = 1;
+}
+
 function drawOverlay(ctx, overlay, zoom) {
   for (const { x, y, color } of overlay) {
     ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`;
@@ -55,7 +69,7 @@ function drawSelection(ctx, selectionRect, zoom) {
   ctx.strokeRect(x * zoom + 1, y * zoom + 1, width * zoom - 2, height * zoom - 2);
 }
 
-export function render(ctx, doc, zoom, { overlay, selectionRect } = {}) {
+export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc } = {}) {
   const pxWidth = doc.width * zoom;
   const pxHeight = doc.height * zoom;
 
@@ -64,6 +78,8 @@ export function render(ctx, doc, zoom, { overlay, selectionRect } = {}) {
   ctx.imageSmoothingEnabled = false;
 
   drawCheckerboard(ctx, pxWidth, pxHeight, zoom);
+
+  if (onionSkinDoc) drawOnionSkin(ctx, onionSkinDoc, doc.width, doc.height, zoom);
 
   const composited = composeLayers(doc);
   const offscreen = document.createElement('canvas');

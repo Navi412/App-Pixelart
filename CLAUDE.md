@@ -19,9 +19,11 @@ Vanilla JS (ES modules), sin dependencias. Canvas 2D.
   sin tener que tocar ni las herramientas ni el binding de eventos de puntero.
 
 ## Estructura
-/core     -> document.js (+ comandos de capas: añadir/quitar/mover/ocultar), layer.js, history.js,
-             color.js, shapes.js (geometría pura: línea/rectángulo/elipse),
-             project.js (fotogramas de animación), serialize.js (proyecto <-> JSON para autoguardado)
+/core     -> document.js (+ comandos de capas: añadir/quitar/mover/ocultar), layer.js
+             (+ resizeLayerPixels), history.js, color.js, shapes.js (geometría pura:
+             línea/rectángulo/elipse), mirror.js (reflejo de celdas para dibujo con espejo),
+             project.js (fotogramas de animación + resizeProject),
+             serialize.js (proyecto <-> JSON para autoguardado)
 /tools    -> pencil.js, eraser.js, bucket.js, paintTool.js (trazo compartido por lápiz y goma),
              shapeTool.js (motor compartido por line.js/rectangle.js/ellipse.js),
              eyedropper.js, selection.js (selección rectangular + mover)

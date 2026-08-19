@@ -1,5 +1,6 @@
 import { execute } from '../core/history.js';
 import { getPixel, setPixel } from '../core/layer.js';
+import { mirrorCells } from '../core/mirror.js';
 
 function brushCells(width, height, x, y, size) {
   const startX = x - Math.floor((size - 1) / 2);
@@ -19,13 +20,14 @@ function brushCells(width, height, x, y, size) {
   return cells;
 }
 
-function createBrushCommand(layerIndex, width, height, x, y, size, color) {
+function createBrushCommand(layerIndex, width, height, x, y, size, color, mirror) {
   let changes = null;
   return {
     do(doc) {
       const layer = doc.layers[layerIndex];
       if (changes === null) {
-        changes = brushCells(width, height, x, y, size).map((cell) => ({
+        const cells = mirrorCells(brushCells(width, height, x, y, size), width, height, mirror);
+        changes = cells.map((cell) => ({
           ...cell,
           before: getPixel(layer, width, cell.x, cell.y),
         }));
@@ -49,8 +51,8 @@ export function createPaintTool(resolveColor) {
   function paint(context, x, y) {
     if (last && last.x === x && last.y === y) return;
     last = { x, y };
-    const { doc, history, size = 1 } = context;
-    const command = createBrushCommand(doc.activeLayerIndex, doc.width, doc.height, x, y, size, resolveColor(context));
+    const { doc, history, size = 1, mirror } = context;
+    const command = createBrushCommand(doc.activeLayerIndex, doc.width, doc.height, x, y, size, resolveColor(context), mirror);
     execute(history, doc, command);
   }
 

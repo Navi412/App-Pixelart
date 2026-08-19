@@ -30,6 +30,25 @@ export function setPixel(layer, width, x, y, color) {
   layer.pixels[i + 3] = color.a;
 }
 
+export function resizeLayerPixels(layer, oldWidth, oldHeight, newWidth, newHeight) {
+  const newPixels = new Uint8ClampedArray(newWidth * newHeight * 4);
+  const copyWidth = Math.min(oldWidth, newWidth);
+  const copyHeight = Math.min(oldHeight, newHeight);
+
+  for (let y = 0; y < copyHeight; y++) {
+    for (let x = 0; x < copyWidth; x++) {
+      const srcIndex = pixelIndex(oldWidth, x, y);
+      const dstIndex = pixelIndex(newWidth, x, y);
+      newPixels[dstIndex] = layer.pixels[srcIndex];
+      newPixels[dstIndex + 1] = layer.pixels[srcIndex + 1];
+      newPixels[dstIndex + 2] = layer.pixels[srcIndex + 2];
+      newPixels[dstIndex + 3] = layer.pixels[srcIndex + 3];
+    }
+  }
+
+  return { ...layer, pixels: newPixels };
+}
+
 export function createClearLayerCommand(layerIndex) {
   let before = null;
 

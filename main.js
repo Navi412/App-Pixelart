@@ -1,7 +1,7 @@
 import { undo, redo, execute } from './core/history.js';
 import { createClearLayerCommand } from './core/layer.js';
 import { rgbToHex } from './core/color.js';
-import { createProject, getActiveFrame } from './core/project.js';
+import { createProject, getActiveFrame, resizeProject } from './core/project.js';
 import { serializeProject, deserializeProject } from './core/serialize.js';
 import { render, composeLayers } from './ui/canvas.js';
 import { bindPointerEvents } from './ui/interaction.js';
@@ -173,6 +173,28 @@ canvas.addEventListener(
   { passive: false },
 );
 
+const resizeToggleButton = document.getElementById('resize-toggle');
+const resizePanelEl = document.getElementById('resize-panel');
+const resizeWidthInput = document.getElementById('resize-width');
+const resizeHeightInput = document.getElementById('resize-height');
+const resizeApplyButton = document.getElementById('resize-apply');
+
+attachTooltip(resizeToggleButton, { title: 'Redimensionar lienzo', description: 'Cambia el ancho y el alto de todos los fotogramas' });
+resizeToggleButton.addEventListener('click', () => {
+  resizeWidthInput.value = project.width;
+  resizeHeightInput.value = project.height;
+  resizePanelEl.classList.toggle('is-open');
+});
+
+resizeApplyButton.addEventListener('click', () => {
+  const newWidth = Math.max(1, Math.min(256, parseInt(resizeWidthInput.value, 10) || project.width));
+  const newHeight = Math.max(1, Math.min(256, parseInt(resizeHeightInput.value, 10) || project.height));
+  resizeProject(project, newWidth, newHeight);
+  timeline.refreshAll();
+  setZoom(computeFitZoom());
+  resizePanelEl.classList.remove('is-open');
+});
+
 let activeColor = DEFAULT_PALETTE[0];
 
 function loadCustomColors() {
@@ -313,6 +335,32 @@ function updateBrushSizeButtons() {
 
 updateBrushSizeButtons();
 
+const mirrorEl = document.getElementById('mirror');
+let mirrorH = false;
+let mirrorV = false;
+
+const mirrorHButton = document.createElement('button');
+mirrorHButton.type = 'button';
+mirrorHButton.className = 'btn btn-icon';
+mirrorHButton.textContent = '↔';
+attachTooltip(mirrorHButton, { title: 'Espejo horizontal', description: 'Refleja el trazo en el eje horizontal' });
+mirrorHButton.addEventListener('click', () => {
+  mirrorH = !mirrorH;
+  mirrorHButton.classList.toggle('is-pressed', mirrorH);
+});
+
+const mirrorVButton = document.createElement('button');
+mirrorVButton.type = 'button';
+mirrorVButton.className = 'btn btn-icon';
+mirrorVButton.textContent = '↕';
+attachTooltip(mirrorVButton, { title: 'Espejo vertical', description: 'Refleja el trazo en el eje vertical' });
+mirrorVButton.addEventListener('click', () => {
+  mirrorV = !mirrorV;
+  mirrorVButton.classList.toggle('is-pressed', mirrorV);
+});
+
+mirrorEl.append(mirrorHButton, mirrorVButton);
+
 const layersPanel = createLayersPanel(layersPanelEl, {
   getDoc: () => currentFrame().doc,
   getHistory: () => currentFrame().history,
@@ -344,11 +392,47 @@ exportButton.addEventListener('click', () => {
   });
 });
 
+const exportSpritesheetButton = document.getElementById('export-spritesheet');
+attachTooltip(exportSpritesheetButton, {
+  title: 'Exportar spritesheet',
+  description: 'Descarga todos los fotogramas en una sola imagen',
+});
+exportSpritesheetButton.addEventListener('click', () => {
+  const frameWidth = project.width;
+  const frameHeight = project.height;
+  const sheet = document.createElement('canvas');
+  sheet.width = frameWidth * project.frames.length;
+  sheet.height = frameHeight;
+  const sheetCtx = sheet.getContext('2d');
+
+  project.frames.forEach((frame, index) => {
+    const composited = composeLayers(frame.doc);
+    const off = document.createElement('canvas');
+    off.width = frameWidth;
+    off.height = frameHeight;
+    off.getContext('2d').putImageData(new ImageData(composited, frameWidth, frameHeight), 0, 0);
+    sheetCtx.drawImage(off, index * frameWidth, 0);
+  });
+
+  sheet.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'spritesheet.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+});
+
 function redraw() {
   const activeTool = tools[toolbar.getToolId()];
+  const onionSkinDoc = timeline.isOnionSkinEnabled() && project.activeFrameIndex > 0
+    ? project.frames[project.activeFrameIndex - 1].doc
+    : null;
   render(ctx, currentFrame().doc, zoom, {
     overlay: activeTool.getPreview ? activeTool.getPreview() : null,
     selectionRect: selection,
+    onionSkinDoc,
   });
   layersPanel.refresh();
   timeline.refresh();
@@ -363,6 +447,7 @@ bindPointerEvents(
     getHistory: () => currentFrame().history,
     getColor: () => activeColor,
     getBrushSize: () => brushSize,
+    getMirror: () => ({ horizontal: mirrorH, vertical: mirrorV }),
     getZoom: () => zoom,
   },
   redraw,

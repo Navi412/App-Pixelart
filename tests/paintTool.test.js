@@ -71,3 +71,27 @@ test('una única llamada a onPointerDown con size > 1 genera un solo comando', (
 
   assert.equal(history.undoStack.length, 1);
 });
+
+test('con espejo horizontal activo también pinta la celda reflejada, en un único comando', () => {
+  const doc = createDocument(8, 8);
+  const history = createHistory();
+  const pencil = createPencilTool();
+
+  pencil.onPointerDown({ doc, history, color: RED, mirror: { horizontal: true } }, 1, 4);
+
+  assert.deepEqual(getPixel(doc.layers[0], doc.width, 1, 4), RED);
+  assert.deepEqual(getPixel(doc.layers[0], doc.width, 6, 4), RED);
+  assert.equal(history.undoStack.length, 1);
+});
+
+test('undo con espejo activo restaura también la celda reflejada', () => {
+  const doc = createDocument(8, 8);
+  const history = createHistory();
+  const pencil = createPencilTool();
+
+  pencil.onPointerDown({ doc, history, color: RED, mirror: { horizontal: true } }, 1, 4);
+  undo(history, doc);
+
+  assert.deepEqual(getPixel(doc.layers[0], doc.width, 1, 4), TRANSPARENT);
+  assert.deepEqual(getPixel(doc.layers[0], doc.width, 6, 4), TRANSPARENT);
+});

@@ -1,5 +1,6 @@
 import { execute } from '../core/history.js';
 import { getPixel, setPixel } from '../core/layer.js';
+import { mirrorCells } from '../core/mirror.js';
 
 function colorsEqual(a, b) {
   return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
@@ -28,14 +29,20 @@ function floodFillChanges(layer, width, height, startX, startY, targetColor) {
   return changes;
 }
 
-function createFloodFillCommand(layerIndex, width, height, startX, startY, targetColor, fillColor) {
+function createFloodFillCommand(layerIndex, width, height, startX, startY, targetColor, fillColor, mirror) {
   let changes = null;
 
   return {
     do(doc) {
       const layer = doc.layers[layerIndex];
       if (changes === null) {
-        changes = floodFillChanges(layer, width, height, startX, startY, targetColor);
+        const base = floodFillChanges(layer, width, height, startX, startY, targetColor);
+        const map = new Map(base.map((c) => [`${c.x},${c.y}`, c]));
+        for (const { x, y } of mirrorCells(base, width, height, mirror)) {
+          const key = `${x},${y}`;
+          if (!map.has(key)) map.set(key, { x, y, before: getPixel(layer, width, x, y) });
+        }
+        changes = [...map.values()];
       }
       for (const { x, y } of changes) {
         setPixel(layer, width, x, y, fillColor);
@@ -53,12 +60,12 @@ function createFloodFillCommand(layerIndex, width, height, startX, startY, targe
 export function createBucketTool() {
   return {
     onPointerDown(context, x, y) {
-      const { doc, history, color } = context;
+      const { doc, history, color, mirror } = context;
       const layer = doc.layers[doc.activeLayerIndex];
       const target = getPixel(layer, doc.width, x, y);
       if (colorsEqual(target, color)) return;
 
-      const command = createFloodFillCommand(doc.activeLayerIndex, doc.width, doc.height, x, y, target, color);
+      const command = createFloodFillCommand(doc.activeLayerIndex, doc.width, doc.height, x, y, target, color, mirror);
       execute(history, doc, command);
     },
     onPointerMove() {},

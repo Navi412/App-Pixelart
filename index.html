@@ -31,10 +31,21 @@
     <div class="sidebar">
       <div class="toolbar">
         <button type="button" id="dock-toggle" class="btn btn-icon"></button>
+        <button type="button" id="resize-toggle" class="btn">Redimensionar</button>
         <button type="button" id="export-png" class="btn">Exportar PNG</button>
+        <button type="button" id="export-spritesheet" class="btn">Exportar spritesheet</button>
+      </div>
+      <div id="resize-panel" class="resize-panel">
+        <div class="resize-fields">
+          <input type="number" id="resize-width" min="1" max="256" />
+          <span>×</span>
+          <input type="number" id="resize-height" min="1" max="256" />
+        </div>
+        <button type="button" id="resize-apply" class="btn">Aplicar</button>
       </div>
       <div id="toolbar" class="toolbar"></div>
       <div id="brush-size" class="toolbar"></div>
+      <div id="mirror" class="toolbar"></div>
       <div class="panel color-panel">
         <div id="palette">
           <button type="button" id="open-picker" class="swatch swatch-add">+</button>

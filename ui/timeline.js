@@ -104,7 +104,22 @@ export function createTimeline(container, { project, onChange }) {
     onChange();
   });
 
-  controlsEl.append(playButton, ...fpsButtons, addButton, removeButton);
+  let onionSkin = false;
+  const onionSkinButton = document.createElement('button');
+  onionSkinButton.type = 'button';
+  onionSkinButton.className = 'btn';
+  onionSkinButton.textContent = 'Cebolla';
+  attachTooltip(onionSkinButton, {
+    title: 'Papel cebolla',
+    description: 'Muestra el fotograma anterior semitransparente como guía',
+  });
+  onionSkinButton.addEventListener('click', () => {
+    onionSkin = !onionSkin;
+    onionSkinButton.classList.toggle('is-pressed', onionSkin);
+    onChange();
+  });
+
+  controlsEl.append(playButton, ...fpsButtons, addButton, removeButton, onionSkinButton);
   container.append(stripEl, controlsEl);
 
   function refreshAll() {
@@ -143,5 +158,5 @@ export function createTimeline(container, { project, onChange }) {
 
   refreshAll();
 
-  return { refresh, refreshAll, stopPlayback };
+  return { refresh, refreshAll, stopPlayback, isOnionSkinEnabled: () => onionSkin };
 }

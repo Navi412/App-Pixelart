@@ -1,4 +1,4 @@
-export function bindPointerEvents(canvasEl, getTool, { getDoc, getHistory, getColor, getBrushSize, getZoom }, onChange) {
+export function bindPointerEvents(canvasEl, getTool, { getDoc, getHistory, getColor, getBrushSize, getMirror, getZoom }, onChange) {
   let drawing = false;
 
   function toDocCoords(event) {
@@ -15,7 +15,13 @@ export function bindPointerEvents(canvasEl, getTool, { getDoc, getHistory, getCo
   }
 
   function toolContext() {
-    return { doc: getDoc(), history: getHistory(), color: getColor(), size: getBrushSize ? getBrushSize() : 1 };
+    return {
+      doc: getDoc(),
+      history: getHistory(),
+      color: getColor(),
+      size: getBrushSize ? getBrushSize() : 1,
+      mirror: getMirror ? getMirror() : null,
+    };
   }
 
   canvasEl.addEventListener('pointerdown', (event) => {

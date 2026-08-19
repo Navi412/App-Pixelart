@@ -1,5 +1,6 @@
 import { execute } from '../core/history.js';
 import { getPixel, setPixel } from '../core/layer.js';
+import { mirrorCells } from '../core/mirror.js';
 
 function clip(cells, width, height) {
   return cells.filter((c) => c.x >= 0 && c.y >= 0 && c.x < width && c.y < height);
@@ -26,22 +27,33 @@ export function createShapeTool(cellsFn) {
   let start = null;
   let current = null;
   let previewColor = null;
+  let previewMirror = null;
+  let previewWidth = null;
+  let previewHeight = null;
+
+  function trackPreviewState(context) {
+    previewColor = context.color;
+    previewMirror = context.mirror;
+    previewWidth = context.doc.width;
+    previewHeight = context.doc.height;
+  }
 
   return {
     onPointerDown(context, x, y) {
       start = { x, y };
       current = { x, y };
-      previewColor = context.color;
+      trackPreviewState(context);
     },
     onPointerMove(context, x, y) {
       if (!start) return;
       current = { x, y };
-      previewColor = context.color;
+      trackPreviewState(context);
     },
     onPointerUp(context) {
       if (!start || !current) return;
-      const { doc, history, color } = context;
-      const cells = clip(cellsFn(start.x, start.y, current.x, current.y), doc.width, doc.height);
+      const { doc, history, color, mirror } = context;
+      const clipped = clip(cellsFn(start.x, start.y, current.x, current.y), doc.width, doc.height);
+      const cells = mirrorCells(clipped, doc.width, doc.height, mirror);
       if (cells.length > 0) {
         execute(history, doc, createCellsCommand(doc.activeLayerIndex, doc.width, cells, color));
       }
@@ -50,7 +62,9 @@ export function createShapeTool(cellsFn) {
     },
     getPreview() {
       if (!start || !current) return null;
-      return cellsFn(start.x, start.y, current.x, current.y).map((c) => ({ ...c, color: previewColor }));
+      const clipped = clip(cellsFn(start.x, start.y, current.x, current.y), previewWidth, previewHeight);
+      const cells = mirrorCells(clipped, previewWidth, previewHeight, previewMirror);
+      return cells.map((c) => ({ ...c, color: previewColor }));
     },
   };
 }

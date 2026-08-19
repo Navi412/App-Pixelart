@@ -1,5 +1,6 @@
 import { createDocument } from './document.js';
 import { createHistory } from './history.js';
+import { resizeLayerPixels } from './layer.js';
 
 function createFrame(width, height) {
   return { doc: createDocument(width, height), history: createHistory() };
@@ -44,4 +45,16 @@ export function removeFrame(project, index) {
   project.frames.splice(index, 1);
   project.activeFrameIndex = Math.min(project.activeFrameIndex, project.frames.length - 1);
   return true;
+}
+
+export function resizeProject(project, newWidth, newHeight) {
+  for (const frame of project.frames) {
+    frame.doc.layers = frame.doc.layers.map((layer) =>
+      resizeLayerPixels(layer, project.width, project.height, newWidth, newHeight),
+    );
+    frame.doc.width = newWidth;
+    frame.doc.height = newHeight;
+  }
+  project.width = newWidth;
+  project.height = newHeight;
 }
