@@ -29,3 +29,18 @@ export function setPixel(layer, width, x, y, color) {
   layer.pixels[i + 2] = color.b;
   layer.pixels[i + 3] = color.a;
 }
+
+export function createClearLayerCommand(layerIndex) {
+  let before = null;
+
+  return {
+    do(doc) {
+      const layer = doc.layers[layerIndex];
+      if (before === null) before = layer.pixels.slice();
+      layer.pixels.fill(0);
+    },
+    undo(doc) {
+      doc.layers[layerIndex].pixels.set(before);
+    },
+  };
+}

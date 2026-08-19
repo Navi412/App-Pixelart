@@ -1,13 +1,20 @@
+import { attachTooltip } from './tooltip.js';
+
 export function createToolbar(container, tools, initialId = tools[0]?.id) {
   let selectedId = initialId;
   const buttons = [];
 
-  for (const { id, label } of tools) {
+  for (const { id, label, icon, description, shortcut } of tools) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = label;
-    button.style.padding = '6px 10px';
-    button.style.cursor = 'pointer';
+    button.className = 'btn btn-icon';
+    if (icon) {
+      button.innerHTML = icon;
+    } else {
+      button.textContent = label;
+      button.classList.remove('btn-icon');
+    }
+    attachTooltip(button, { title: label, shortcut: shortcut?.toUpperCase(), description });
     button.addEventListener('click', () => {
       selectedId = id;
       updateActive();
@@ -20,7 +27,7 @@ export function createToolbar(container, tools, initialId = tools[0]?.id) {
     for (const { id, button } of buttons) {
       const isActive = id === selectedId;
       button.setAttribute('aria-pressed', String(isActive));
-      button.style.outline = isActive ? '2px solid #fff' : 'none';
+      button.classList.toggle('is-pressed', isActive);
     }
   }
 
@@ -29,6 +36,11 @@ export function createToolbar(container, tools, initialId = tools[0]?.id) {
   return {
     getToolId() {
       return selectedId;
+    },
+    setActiveTool(id) {
+      if (!buttons.some((b) => b.id === id)) return;
+      selectedId = id;
+      updateActive();
     },
   };
 }

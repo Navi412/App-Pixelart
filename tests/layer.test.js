@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLayer, pixelIndex, getPixel, setPixel } from '../core/layer.js';
+import { createLayer, pixelIndex, getPixel, setPixel, createClearLayerCommand } from '../core/layer.js';
+import { createDocument } from '../core/document.js';
+import { createHistory, execute, undo } from '../core/history.js';
 
 test('pixelIndex calcula el offset correcto en el array RGBA', () => {
   assert.equal(pixelIndex(4, 0, 0), 0);
@@ -22,4 +24,31 @@ test('un píxel no tocado sigue transparente', () => {
   const layer = createLayer(4, 4, 'Layer 1');
 
   assert.deepEqual(getPixel(layer, 4, 3, 3), { r: 0, g: 0, b: 0, a: 0 });
+});
+
+test('createClearLayerCommand deja todos los píxeles transparentes', () => {
+  const doc = createDocument(4, 4);
+  const history = createHistory();
+  setPixel(doc.layers[0], 4, 0, 0, { r: 255, g: 0, b: 0, a: 255 });
+  setPixel(doc.layers[0], 4, 3, 3, { r: 0, g: 255, b: 0, a: 255 });
+
+  execute(history, doc, createClearLayerCommand(0));
+
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      assert.deepEqual(getPixel(doc.layers[0], 4, x, y), { r: 0, g: 0, b: 0, a: 0 });
+    }
+  }
+});
+
+test('undo tras borrar el lienzo restaura el contenido previo', () => {
+  const doc = createDocument(4, 4);
+  const history = createHistory();
+  const red = { r: 255, g: 0, b: 0, a: 255 };
+  setPixel(doc.layers[0], 4, 0, 0, red);
+
+  execute(history, doc, createClearLayerCommand(0));
+  undo(history, doc);
+
+  assert.deepEqual(getPixel(doc.layers[0], 4, 0, 0), red);
 });

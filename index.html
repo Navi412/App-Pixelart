@@ -4,41 +4,59 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editor de píxel art</title>
+  <link rel="stylesheet" href="./ui/theme.css" />
   <style>
     body {
       margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      background: #1e1e1e;
-    }
-
-    #canvas {
-      border: 1px solid #444;
-    }
-
-    #palette {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 4px;
-      max-width: 512px;
-    }
-
-    #toolbar {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
     }
   </style>
 </head>
 <body>
-  <div id="toolbar"></div>
-  <canvas id="canvas"></canvas>
-  <div id="palette"></div>
+  <div class="app-layout">
+    <div class="canvas-area">
+      <div id="zoom-toolbar" class="toolbar zoom-toolbar">
+        <button type="button" id="zoom-out" class="btn btn-icon">−</button>
+        <span id="zoom-level" class="btn"></span>
+        <button type="button" id="zoom-in" class="btn btn-icon">+</button>
+        <button type="button" id="zoom-fit" class="btn">Ajustar</button>
+      </div>
+      <div class="canvas-viewport">
+        <div class="panel">
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+      <div id="timeline" class="panel timeline-panel"></div>
+    </div>
+    <div id="resize-handle" class="resize-handle"></div>
+    <div class="sidebar">
+      <div class="toolbar">
+        <button type="button" id="dock-toggle" class="btn btn-icon"></button>
+        <button type="button" id="export-png" class="btn">Exportar PNG</button>
+      </div>
+      <div id="toolbar" class="toolbar"></div>
+      <div id="brush-size" class="toolbar"></div>
+      <div class="panel color-panel">
+        <div id="palette">
+          <button type="button" id="open-picker" class="swatch swatch-add">+</button>
+        </div>
+
+        <div id="color-picker" class="color-picker">
+          <div class="picker-row">
+            <canvas id="sv-canvas"></canvas>
+            <canvas id="hue-canvas"></canvas>
+          </div>
+          <div class="picker-preview-row">
+            <div id="picker-preview" class="swatch"></div>
+            <span id="picker-hex"></span>
+          </div>
+          <button type="button" id="save-color" class="btn">Guardar color</button>
+        </div>
+
+        <div id="custom-palette" class="custom-colors"></div>
+      </div>
+      <div id="layers-panel" class="panel layers-panel"></div>
+    </div>
+  </div>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

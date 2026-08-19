@@ -1,18 +1,18 @@
-const CHECKER_CELL = 8;
 const CHECKER_LIGHT = '#ffffff';
 const CHECKER_DARK = '#cccccc';
+const ACCENT_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3d8fd6';
 
-function drawCheckerboard(ctx, pxWidth, pxHeight) {
-  for (let y = 0; y < pxHeight; y += CHECKER_CELL) {
-    for (let x = 0; x < pxWidth; x += CHECKER_CELL) {
-      const isLight = ((x / CHECKER_CELL) + (y / CHECKER_CELL)) % 2 === 0;
+function drawCheckerboard(ctx, pxWidth, pxHeight, checkerCell) {
+  for (let y = 0; y < pxHeight; y += checkerCell) {
+    for (let x = 0; x < pxWidth; x += checkerCell) {
+      const isLight = ((x / checkerCell) + (y / checkerCell)) % 2 === 0;
       ctx.fillStyle = isLight ? CHECKER_LIGHT : CHECKER_DARK;
-      ctx.fillRect(x, y, CHECKER_CELL, CHECKER_CELL);
+      ctx.fillRect(x, y, checkerCell, checkerCell);
     }
   }
 }
 
-function composeLayers(doc) {
+export function composeLayers(doc) {
   const { width, height, layers } = doc;
   const out = new Uint8ClampedArray(width * height * 4);
 
@@ -41,7 +41,21 @@ function composeLayers(doc) {
   return out;
 }
 
-export function render(ctx, doc, zoom) {
+function drawOverlay(ctx, overlay, zoom) {
+  for (const { x, y, color } of overlay) {
+    ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`;
+    ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
+  }
+}
+
+function drawSelection(ctx, selectionRect, zoom) {
+  const { x, y, width, height } = selectionRect;
+  ctx.strokeStyle = ACCENT_COLOR;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x * zoom + 1, y * zoom + 1, width * zoom - 2, height * zoom - 2);
+}
+
+export function render(ctx, doc, zoom, { overlay, selectionRect } = {}) {
   const pxWidth = doc.width * zoom;
   const pxHeight = doc.height * zoom;
 
@@ -49,7 +63,7 @@ export function render(ctx, doc, zoom) {
   if (ctx.canvas.height !== pxHeight) ctx.canvas.height = pxHeight;
   ctx.imageSmoothingEnabled = false;
 
-  drawCheckerboard(ctx, pxWidth, pxHeight);
+  drawCheckerboard(ctx, pxWidth, pxHeight, zoom);
 
   const composited = composeLayers(doc);
   const offscreen = document.createElement('canvas');
@@ -59,4 +73,7 @@ export function render(ctx, doc, zoom) {
   offCtx.putImageData(new ImageData(composited, doc.width, doc.height), 0, 0);
 
   ctx.drawImage(offscreen, 0, 0, doc.width, doc.height, 0, 0, pxWidth, pxHeight);
+
+  if (overlay) drawOverlay(ctx, overlay, zoom);
+  if (selectionRect) drawSelection(ctx, selectionRect, zoom);
 }

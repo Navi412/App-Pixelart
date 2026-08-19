@@ -1,0 +1,438 @@
+/*
+  Sistema de diseño visual — editor de píxel art.
+  Estética de editor de sprites de los años 90: biseles duros de 2px,
+  sin redondeos, sin sombras difusas, sin degradados, sin transiciones.
+*/
+
+:root {
+  /* Color: paleta fría y oscura */
+  --app-bg: #14161c;
+  --panel-bg: #23262f;
+  --panel-bg-hover: #2a2e38;
+  --border-light: #565b6b;
+  --border-dark: #0a0b0f;
+  --border-light-disabled: #3a3d47;
+  --border-dark-disabled: #17181d;
+  --text: #d7dae2;
+  --text-dim: #7d8294;
+  --accent: #3d8fd6;
+  --accent-text: #0e1116;
+
+  /* Layout: todo múltiplo de 2px */
+  --border-width: 2px;
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 10px;
+  --space-4: 14px;
+  --control-height: 32px;
+
+  /* Tipografía */
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --swatch-size: 36px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-radius: 0;
+  transition: none;
+  animation: none;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  -webkit-font-smoothing: none;
+  text-rendering: optimizeSpeed;
+}
+
+img,
+canvas {
+  image-rendering: pixelated;
+}
+
+/* Panel: contenedor con bisel elevado */
+.panel {
+  background: var(--panel-bg);
+  padding: var(--space-3);
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+/* Titlebar: franja superior de ventana */
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: var(--font-size-sm);
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+.titlebar .btn-icon {
+  background: transparent;
+}
+
+/* Toolbar: fila de botones */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--panel-bg);
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+/* Botón base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  background: var(--panel-bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+.btn:hover {
+  background: var(--panel-bg-hover);
+}
+
+.btn:active,
+.btn.is-pressed {
+  border-top-color: var(--border-dark);
+  border-left-color: var(--border-dark);
+  border-bottom-color: var(--border-light);
+  border-right-color: var(--border-light);
+}
+
+.btn:disabled {
+  color: var(--text-dim);
+  background: var(--panel-bg);
+  cursor: not-allowed;
+  border-top-color: var(--border-light-disabled);
+  border-left-color: var(--border-light-disabled);
+  border-bottom-color: var(--border-dark-disabled);
+  border-right-color: var(--border-dark-disabled);
+}
+
+/* Botón de solo icono: variante cuadrada de .btn */
+.btn-icon {
+  width: var(--control-height);
+  padding: 0;
+}
+
+/* Elemento de lista */
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  color: var(--text);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+}
+
+.list-item.is-selected {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Swatch: botón cuadrado de color en la paleta */
+.swatch {
+  width: var(--swatch-size);
+  height: var(--swatch-size);
+  padding: 0;
+  cursor: pointer;
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+.swatch.is-selected {
+  border-color: var(--accent);
+}
+
+/* Variante de swatch para abrir el selector de color personalizado */
+.swatch-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-bg);
+  color: var(--text);
+  font-size: var(--font-size-base);
+}
+
+.swatch-add:hover {
+  background: var(--panel-bg-hover);
+}
+
+.swatch-add.is-pressed {
+  border-top-color: var(--border-dark);
+  border-left-color: var(--border-dark);
+  border-bottom-color: var(--border-light);
+  border-right-color: var(--border-light);
+}
+
+/* Layout de dos columnas: lienzo a la izquierda, opciones a la derecha */
+.app-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.canvas-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  min-height: 0;
+}
+
+.zoom-toolbar {
+  justify-content: center;
+}
+
+#zoom-level {
+  min-width: 56px;
+  justify-content: center;
+  color: var(--text-dim);
+}
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border-left: var(--border-width) solid var(--border-dark);
+}
+
+.resize-handle {
+  width: var(--space-2);
+  flex-shrink: 0;
+  cursor: ew-resize;
+  background: var(--border-dark);
+}
+
+.app-layout.dock-left {
+  flex-direction: row-reverse;
+}
+
+.app-layout.dock-left .sidebar {
+  border-left: none;
+  border-right: var(--border-width) solid var(--border-dark);
+}
+
+.color-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+#palette,
+.custom-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Selector de color HSV: oculto hasta que se abre */
+.color-picker {
+  display: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.color-picker.is-open {
+  display: flex;
+}
+
+.picker-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.picker-row canvas {
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+  cursor: crosshair;
+}
+
+#sv-canvas {
+  width: 180px;
+  height: 180px;
+}
+
+#hue-canvas {
+  width: 24px;
+  height: 180px;
+}
+
+.picker-preview-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+#picker-hex {
+  color: var(--text-dim);
+}
+
+/* Tooltip: cartel de descripción con el mismo bisel que el resto del tema */
+.tooltip {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  max-width: 220px;
+  background: var(--panel-bg);
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  pointer-events: none;
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+.tooltip.is-visible {
+  display: block;
+}
+
+.tooltip .tooltip-shortcut {
+  color: var(--accent);
+}
+
+/* Panel de capas */
+.layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.layers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-row {
+  gap: var(--space-2);
+}
+
+.layer-visibility {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.layer-visibility svg {
+  width: 16px;
+  height: 16px;
+}
+
+.layer-visibility.is-hidden {
+  color: var(--text-dim);
+}
+
+.list-item.is-selected .layer-visibility,
+.list-item.is-selected .layer-visibility.is-hidden {
+  color: var(--accent-text);
+}
+
+.layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Timeline de animación */
+.timeline-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.frame-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.frame-thumb {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  cursor: pointer;
+  background: var(--app-bg);
+  border: var(--border-width) solid;
+  border-top-color: var(--border-light);
+  border-left-color: var(--border-light);
+  border-bottom-color: var(--border-dark);
+  border-right-color: var(--border-dark);
+}
+
+.frame-thumb canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.frame-thumb.is-selected {
+  border-color: var(--accent);
+}

@@ -21,41 +21,41 @@ function toCss(color) {
   return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`;
 }
 
-export function createPalette(container, { colors = DEFAULT_PALETTE, initialColor = colors[0] } = {}) {
-  let selected = initialColor;
+function colorsEqual(a, b) {
+  return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
+}
 
-  const buttons = colors.map((color) => {
+export function createPalette(container, { colors = DEFAULT_PALETTE, onSelect } = {}) {
+  const buttons = [];
+
+  function createSwatchButton(color) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.style.width = '32px';
-    button.style.height = '32px';
-    button.style.padding = '0';
-    button.style.border = '1px solid #333';
-    button.style.cursor = 'pointer';
+    button.className = 'swatch';
     button.style.backgroundColor = toCss(color);
     button.setAttribute('aria-label', toCss(color));
-    button.addEventListener('click', () => {
-      selected = color;
-      updateActive();
-    });
+    button.addEventListener('click', () => onSelect?.(color));
     container.appendChild(button);
-    return { color, button };
-  });
+    buttons.push({ color, button });
+  }
 
-  function updateActive() {
+  for (const color of colors) createSwatchButton(color);
+
+  function setActive(activeColor) {
     for (const { color, button } of buttons) {
-      const isActive = color === selected;
+      const isActive = colorsEqual(color, activeColor);
       button.setAttribute('aria-pressed', String(isActive));
-      button.style.outline = isActive ? '2px solid #fff' : 'none';
-      button.style.outlineOffset = isActive ? '-3px' : '0';
+      button.classList.toggle('is-selected', isActive);
     }
   }
 
-  updateActive();
+  function addColor(color) {
+    createSwatchButton(color);
+  }
 
   return {
-    getColor() {
-      return selected;
-    },
+    setActive,
+    addColor,
+    getColors: () => buttons.map((b) => b.color),
   };
 }
