@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Editor de píxel art</title>
+  <script>
+    // Aplica el tema guardado antes del primer pintado (misma clave que ui/storage.js).
+    try {
+      if (localStorage.getItem('pixel-editor.theme') === 'dark') document.documentElement.dataset.theme = 'dark';
+    } catch {}
+  </script>
   <link rel="stylesheet" href="./ui/theme.css" />
   <style>
     body {
@@ -15,13 +21,14 @@
   <div class="app-layout">
     <div class="canvas-area">
       <div id="zoom-toolbar" class="toolbar zoom-toolbar">
-        <button type="button" id="zoom-out" class="btn btn-icon">−</button>
+        <button type="button" id="zoom-out" class="btn btn-icon"></button>
         <span id="zoom-level" class="btn"></span>
-        <button type="button" id="zoom-in" class="btn btn-icon">+</button>
+        <button type="button" id="zoom-in" class="btn btn-icon"></button>
         <button type="button" id="zoom-fit" class="btn">Ajustar</button>
+        <button type="button" id="grid-toggle" class="btn btn-icon"></button>
       </div>
       <div class="canvas-viewport">
-        <div class="panel">
+        <div class="panel canvas-frame">
           <canvas id="canvas"></canvas>
         </div>
       </div>
@@ -31,11 +38,11 @@
     <div class="sidebar">
       <div class="toolbar">
         <button type="button" id="dock-toggle" class="btn btn-icon"></button>
+        <button type="button" id="theme-toggle" class="btn btn-icon"></button>
         <button type="button" id="project-toggle" class="btn">Proyectos</button>
         <button type="button" id="resize-toggle" class="btn">Redimensionar</button>
         <button type="button" id="import-image" class="btn">Importar imagen</button>
-        <button type="button" id="export-png" class="btn">Exportar PNG</button>
-        <button type="button" id="export-spritesheet" class="btn">Exportar spritesheet</button>
+        <button type="button" id="export-toggle" class="btn btn-accent">Exportar</button>
       </div>
       <input type="file" id="import-file" accept="image/*" hidden />
       <div id="project-panel" class="project-panel">
@@ -48,16 +55,30 @@
       </div>
       <div id="resize-panel" class="resize-panel">
         <div class="resize-fields">
-          <input type="number" id="resize-width" min="1" max="256" />
+          <input type="number" id="resize-width" min="1" max="256" aria-label="Ancho" />
           <span>×</span>
-          <input type="number" id="resize-height" min="1" max="256" />
+          <input type="number" id="resize-height" min="1" max="256" aria-label="Alto" />
         </div>
         <button type="button" id="resize-apply" class="btn">Aplicar</button>
       </div>
-      <div id="toolbar" class="toolbar"></div>
-      <div id="brush-size"></div>
-      <div id="mirror" class="toolbar"></div>
+      <div id="export-panel" class="export-panel">
+        <p class="eyebrow">Tamaño</p>
+        <div id="export-scale" class="toolbar"></div>
+        <div class="export-actions">
+          <button type="button" id="export-png" class="btn">PNG</button>
+          <button type="button" id="export-spritesheet" class="btn">Spritesheet</button>
+          <button type="button" id="export-gif" class="btn">GIF</button>
+        </div>
+      </div>
+      <div class="panel tools-panel">
+        <p class="eyebrow panel-title">Herramientas</p>
+        <div id="toolbar" class="toolbar"></div>
+        <div id="brush-size"></div>
+        <div id="paint-options" class="toolbar"></div>
+        <div id="selection-actions" class="toolbar selection-actions" hidden></div>
+      </div>
       <div class="panel color-panel">
+        <p class="eyebrow panel-title">Color</p>
         <div id="palette">
           <button type="button" id="open-picker" class="swatch swatch-add">+</button>
         </div>
@@ -67,6 +88,7 @@
             <canvas id="sv-canvas"></canvas>
             <canvas id="hue-canvas"></canvas>
           </div>
+          <canvas id="alpha-canvas" title="Transparencia"></canvas>
           <div class="picker-preview-row">
             <div id="picker-preview" class="swatch"></div>
             <span id="picker-hex"></span>
@@ -76,7 +98,9 @@
 
         <div id="custom-palette" class="custom-colors"></div>
       </div>
-      <div id="layers-panel" class="panel layers-panel"></div>
+      <div id="layers-panel" class="panel layers-panel">
+        <p class="eyebrow panel-title">Capas</p>
+      </div>
     </div>
   </div>
   <script type="module" src="./main.js"></script>

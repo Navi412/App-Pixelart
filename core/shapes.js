@@ -70,3 +70,51 @@ export function ellipseOutlineCells(x0, y0, x1, y1) {
 
   return cells;
 }
+
+export function rectFilledCells(x0, y0, x1, y1) {
+  const cells = [];
+  for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) {
+    for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) cells.push({ x, y });
+  }
+  return cells;
+}
+
+// Rellena cada fila entre el punto más a la izquierda y el más a la derecha del
+// contorno, para que el relleno encaje exactamente con ellipseOutlineCells.
+export function ellipseFilledCells(x0, y0, x1, y1) {
+  const spans = new Map();
+  for (const { x, y } of ellipseOutlineCells(x0, y0, x1, y1)) {
+    const span = spans.get(y);
+    if (!span) spans.set(y, { min: x, max: x });
+    else {
+      span.min = Math.min(span.min, x);
+      span.max = Math.max(span.max, x);
+    }
+  }
+
+  const cells = [];
+  for (const [y, { min, max }] of spans) {
+    for (let x = min; x <= max; x++) cells.push({ x, y });
+  }
+  return cells;
+}
+
+const signOrOne = (n) => (n < 0 ? -1 : 1);
+
+// Shift en la herramienta de línea: la ajusta a horizontal, vertical o 45°.
+export function constrainLine(x0, y0, x1, y1) {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  if (Math.abs(dx) > 2 * Math.abs(dy)) return { x: x1, y: y0 };
+  if (Math.abs(dy) > 2 * Math.abs(dx)) return { x: x0, y: y1 };
+  const d = Math.max(Math.abs(dx), Math.abs(dy));
+  return { x: x0 + signOrOne(dx) * d, y: y0 + signOrOne(dy) * d };
+}
+
+// Shift en rectángulo/elipse: fuerza un cuadrado/círculo.
+export function constrainSquare(x0, y0, x1, y1) {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const d = Math.max(Math.abs(dx), Math.abs(dy));
+  return { x: x0 + signOrOne(dx) * d, y: y0 + signOrOne(dy) * d };
+}

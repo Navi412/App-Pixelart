@@ -1,6 +1,9 @@
+import { composeLayers } from '../core/document.js';
+
 const CHECKER_LIGHT = '#ffffff';
 const CHECKER_DARK = '#cccccc';
-const ACCENT_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3d8fd6';
+const GRID_MIN_ZOOM = 6; // por debajo, las líneas taparían el dibujo
+const GRID_COLOR = 'rgba(0, 0, 0, 0.14)';
 
 function drawCheckerboard(ctx, pxWidth, pxHeight, checkerCell) {
   for (let y = 0; y < pxHeight; y += checkerCell) {
@@ -12,46 +15,19 @@ function drawCheckerboard(ctx, pxWidth, pxHeight, checkerCell) {
   }
 }
 
-export function composeLayers(doc) {
-  const { width, height, layers } = doc;
-  const out = new Uint8ClampedArray(width * height * 4);
-
-  for (const layer of layers) {
-    if (!layer.visible) continue;
-    const { pixels, opacity } = layer;
-
-    for (let i = 0; i < pixels.length; i += 4) {
-      const srcA = (pixels[i + 3] / 255) * opacity;
-      if (srcA <= 0) continue;
-
-      const dstA = out[i + 3] / 255;
-      const outA = srcA + dstA * (1 - srcA);
-      if (outA <= 0) {
-        out[i + 3] = 0;
-        continue;
-      }
-
-      out[i] = (pixels[i] * srcA + out[i] * dstA * (1 - srcA)) / outA;
-      out[i + 1] = (pixels[i + 1] * srcA + out[i + 1] * dstA * (1 - srcA)) / outA;
-      out[i + 2] = (pixels[i + 2] * srcA + out[i + 2] * dstA * (1 - srcA)) / outA;
-      out[i + 3] = outA * 255;
-    }
-  }
-
-  return out;
+function docToCanvas(doc) {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = doc.width;
+  offscreen.height = doc.height;
+  offscreen.getContext('2d').putImageData(new ImageData(composeLayers(doc), doc.width, doc.height), 0, 0);
+  return offscreen;
 }
 
 const ONION_SKIN_ALPHA = 0.35;
 
 function drawOnionSkin(ctx, onionSkinDoc, width, height, zoom) {
-  const composited = composeLayers(onionSkinDoc);
-  const offscreen = document.createElement('canvas');
-  offscreen.width = onionSkinDoc.width;
-  offscreen.height = onionSkinDoc.height;
-  offscreen.getContext('2d').putImageData(new ImageData(composited, onionSkinDoc.width, onionSkinDoc.height), 0, 0);
-
   ctx.globalAlpha = ONION_SKIN_ALPHA;
-  ctx.drawImage(offscreen, 0, 0, onionSkinDoc.width, onionSkinDoc.height, 0, 0, width * zoom, height * zoom);
+  ctx.drawImage(docToCanvas(onionSkinDoc), 0, 0, onionSkinDoc.width, onionSkinDoc.height, 0, 0, width * zoom, height * zoom);
   ctx.globalAlpha = 1;
 }
 
@@ -62,14 +38,21 @@ function drawOverlay(ctx, overlay, zoom) {
   }
 }
 
+function drawGrid(ctx, doc, zoom) {
+  ctx.fillStyle = GRID_COLOR;
+  for (let x = 1; x < doc.width; x++) ctx.fillRect(x * zoom, 0, 1, doc.height * zoom);
+  for (let y = 1; y < doc.height; y++) ctx.fillRect(0, y * zoom, doc.width * zoom, 1);
+}
+
 function drawSelection(ctx, selectionRect, zoom) {
   const { x, y, width, height } = selectionRect;
-  ctx.strokeStyle = ACCENT_COLOR;
+  // Se lee en cada pintado: el acento cambia con el tema claro/oscuro.
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff6a2c';
   ctx.lineWidth = 2;
   ctx.strokeRect(x * zoom + 1, y * zoom + 1, width * zoom - 2, height * zoom - 2);
 }
 
-export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc } = {}) {
+export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc, grid } = {}) {
   const pxWidth = doc.width * zoom;
   const pxHeight = doc.height * zoom;
 
@@ -81,15 +64,9 @@ export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc } 
 
   if (onionSkinDoc) drawOnionSkin(ctx, onionSkinDoc, doc.width, doc.height, zoom);
 
-  const composited = composeLayers(doc);
-  const offscreen = document.createElement('canvas');
-  offscreen.width = doc.width;
-  offscreen.height = doc.height;
-  const offCtx = offscreen.getContext('2d');
-  offCtx.putImageData(new ImageData(composited, doc.width, doc.height), 0, 0);
-
-  ctx.drawImage(offscreen, 0, 0, doc.width, doc.height, 0, 0, pxWidth, pxHeight);
+  ctx.drawImage(docToCanvas(doc), 0, 0, doc.width, doc.height, 0, 0, pxWidth, pxHeight);
 
   if (overlay) drawOverlay(ctx, overlay, zoom);
+  if (grid && zoom >= GRID_MIN_ZOOM) drawGrid(ctx, doc, zoom);
   if (selectionRect) drawSelection(ctx, selectionRect, zoom);
 }

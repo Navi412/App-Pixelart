@@ -1,6 +1,7 @@
 import { createProject, applyProjectData } from '../core/project.js';
 import { listProjects, loadProjectData, createProjectEntry, renameProjectEntry, deleteProjectEntry } from './storage.js';
 import { attachTooltip } from './tooltip.js';
+import { confirmAction } from './dialog.js';
 
 export function createProjectSwitcher({ toggleButton, panelEl, nameInput, listEl, createButton, deleteButton, project, getActiveId, setActiveId, onSwitch }) {
   attachTooltip(toggleButton, { title: 'Proyectos', description: 'Cambia, crea o elimina proyectos guardados' });
@@ -20,6 +21,7 @@ export function createProjectSwitcher({ toggleButton, panelEl, nameInput, listEl
 
   toggleButton.addEventListener('click', () => {
     panelEl.classList.toggle('is-open');
+    toggleButton.classList.toggle('is-pressed', panelEl.classList.contains('is-open'));
     if (panelEl.classList.contains('is-open')) refresh();
   });
 
@@ -39,10 +41,16 @@ export function createProjectSwitcher({ toggleButton, panelEl, nameInput, listEl
     refresh();
   });
 
-  deleteButton.addEventListener('click', () => {
+  deleteButton.addEventListener('click', async () => {
     const all = listProjects();
     if (all.length <= 1) return;
     const activeId = getActiveId();
+    const ok = await confirmAction({
+      title: `Eliminar «${currentEntry()?.name ?? 'proyecto'}»`,
+      message: 'Se borrarán todos sus fotogramas y capas. Esto no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+    });
+    if (!ok) return;
     const remaining = all.find((entry) => entry.id !== activeId);
     deleteProjectEntry(activeId);
     switchTo(remaining.id);

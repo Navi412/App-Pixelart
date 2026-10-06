@@ -1,6 +1,7 @@
 import { execute } from '../core/history.js';
 import { getPixel, setPixel } from '../core/layer.js';
 import { mirrorCells } from '../core/mirror.js';
+import { lineCells } from '../core/shapes.js';
 
 function brushCells(width, height, x, y, size) {
   const startX = x - Math.floor((size - 1) / 2);
@@ -20,51 +21,59 @@ function brushCells(width, height, x, y, size) {
   return cells;
 }
 
-function createBrushCommand(layerIndex, width, height, x, y, size, color, mirror) {
-  let changes = null;
+// Un trazo entero (de pointerdown a pointerup) es un único comando: se registra
+// en el historial al empezar y va acumulando celdas mientras se arrastra, así
+// un Ctrl+Z deshace el trazo completo y no píxel a píxel.
+function createStrokeCommand(layerIndex, width, color) {
+  const changes = new Map();
+
   return {
+    paint(doc, cells) {
+      const layer = doc.layers[layerIndex];
+      for (const { x, y } of cells) {
+        const key = y * width + x;
+        if (!changes.has(key)) changes.set(key, { x, y, before: getPixel(layer, width, x, y) });
+        setPixel(layer, width, x, y, color);
+      }
+    },
     do(doc) {
       const layer = doc.layers[layerIndex];
-      if (changes === null) {
-        const cells = mirrorCells(brushCells(width, height, x, y, size), width, height, mirror);
-        changes = cells.map((cell) => ({
-          ...cell,
-          before: getPixel(layer, width, cell.x, cell.y),
-        }));
-      }
-      for (const { x: cx, y: cy } of changes) {
-        setPixel(layer, width, cx, cy, color);
-      }
+      for (const { x, y } of changes.values()) setPixel(layer, width, x, y, color);
     },
     undo(doc) {
       const layer = doc.layers[layerIndex];
-      for (const { x: cx, y: cy, before } of changes) {
-        setPixel(layer, width, cx, cy, before);
-      }
+      for (const { x, y, before } of changes.values()) setPixel(layer, width, x, y, before);
     },
   };
 }
 
 export function createPaintTool(resolveColor) {
+  let stroke = null;
   let last = null;
 
-  function paint(context, x, y) {
-    if (last && last.x === x && last.y === y) return;
-    last = { x, y };
-    const { doc, history, size = 1, mirror } = context;
-    const command = createBrushCommand(doc.activeLayerIndex, doc.width, doc.height, x, y, size, resolveColor(context), mirror);
-    execute(history, doc, command);
+  function cellsAt(context, x, y) {
+    const { doc, size = 1, mirror } = context;
+    return mirrorCells(brushCells(doc.width, doc.height, x, y, size), doc.width, doc.height, mirror);
   }
 
   return {
     onPointerDown(context, x, y) {
-      last = null;
-      paint(context, x, y);
+      const { doc, history } = context;
+      stroke = createStrokeCommand(doc.activeLayerIndex, doc.width, resolveColor(context));
+      execute(history, doc, stroke);
+      stroke.paint(doc, cellsAt(context, x, y));
+      last = { x, y };
     },
     onPointerMove(context, x, y) {
-      paint(context, x, y);
+      if (!stroke || (last.x === x && last.y === y)) return;
+      // Se rellena el hueco entre el punto anterior y el actual: con el ratón
+      // rápido los eventos llegan separados varios píxeles.
+      const points = lineCells(last.x, last.y, x, y).slice(1);
+      stroke.paint(context.doc, points.flatMap((p) => cellsAt(context, p.x, p.y)));
+      last = { x, y };
     },
     onPointerUp() {
+      stroke = null;
       last = null;
     },
   };

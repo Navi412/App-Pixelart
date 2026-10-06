@@ -23,37 +23,48 @@ function createCellsCommand(layerIndex, width, cells, color) {
   };
 }
 
-export function createShapeTool(cellsFn) {
+// outline: celdas del contorno. filled (opcional): celdas con relleno, se usan
+// cuando context.fill está activo. constrain (opcional): ajusta el punto final
+// cuando context.shift está pulsado (cuadrado, círculo, línea a 45°...).
+export function createShapeTool({ outline, filled = null, constrain = null }) {
   let start = null;
   let current = null;
-  let previewColor = null;
-  let previewMirror = null;
-  let previewWidth = null;
-  let previewHeight = null;
+  let preview = null;
 
-  function trackPreviewState(context) {
-    previewColor = context.color;
-    previewMirror = context.mirror;
-    previewWidth = context.doc.width;
-    previewHeight = context.doc.height;
+  function shapeCells(state) {
+    const end = state.shift && constrain ? constrain(start.x, start.y, current.x, current.y) : current;
+    const cellsFn = state.fill && filled ? filled : outline;
+    const clipped = clip(cellsFn(start.x, start.y, end.x, end.y), state.width, state.height);
+    return mirrorCells(clipped, state.width, state.height, state.mirror);
+  }
+
+  function trackState(context) {
+    preview = {
+      color: context.color,
+      mirror: context.mirror,
+      width: context.doc.width,
+      height: context.doc.height,
+      shift: !!context.shift,
+      fill: !!context.fill,
+    };
   }
 
   return {
     onPointerDown(context, x, y) {
       start = { x, y };
       current = { x, y };
-      trackPreviewState(context);
+      trackState(context);
     },
     onPointerMove(context, x, y) {
       if (!start) return;
       current = { x, y };
-      trackPreviewState(context);
+      trackState(context);
     },
     onPointerUp(context) {
       if (!start || !current) return;
-      const { doc, history, color, mirror } = context;
-      const clipped = clip(cellsFn(start.x, start.y, current.x, current.y), doc.width, doc.height);
-      const cells = mirrorCells(clipped, doc.width, doc.height, mirror);
+      trackState(context);
+      const { doc, history, color } = context;
+      const cells = shapeCells(preview);
       if (cells.length > 0) {
         execute(history, doc, createCellsCommand(doc.activeLayerIndex, doc.width, cells, color));
       }
@@ -62,9 +73,7 @@ export function createShapeTool(cellsFn) {
     },
     getPreview() {
       if (!start || !current) return null;
-      const clipped = clip(cellsFn(start.x, start.y, current.x, current.y), previewWidth, previewHeight);
-      const cells = mirrorCells(clipped, previewWidth, previewHeight, previewMirror);
-      return cells.map((c) => ({ ...c, color: previewColor }));
+      return shapeCells(preview).map((c) => ({ ...c, color: preview.color }));
     },
   };
 }

@@ -1,6 +1,14 @@
-import { duplicateFrame, removeFrame, getActiveFrame } from '../core/project.js';
-import { composeLayers } from './canvas.js';
+import { execute } from '../core/history.js';
+import { composeLayers } from '../core/document.js';
+import {
+  getActiveFrame,
+  createAddFrameCommand,
+  createDuplicateFrameCommand,
+  createRemoveFrameCommand,
+  createMoveFrameCommand,
+} from '../core/project.js';
 import { attachTooltip } from './tooltip.js';
+import { PLAY_ICON, PAUSE_ICON, PLUS_ICON, DUPLICATE_ICON, TRASH_ICON, ONION_ICON } from './icons.js';
 
 const FPS_PRESETS = [6, 12, 24];
 
@@ -9,8 +17,17 @@ function drawThumb(canvasEl, doc) {
   canvasEl.height = doc.height;
   const ctx = canvasEl.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  const composited = composeLayers(doc);
-  ctx.putImageData(new ImageData(composited, doc.width, doc.height), 0, 0);
+  ctx.putImageData(new ImageData(composeLayers(doc), doc.width, doc.height), 0, 0);
+}
+
+function createIconButton(icon, tooltip, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-icon';
+  button.innerHTML = icon;
+  attachTooltip(button, tooltip);
+  button.addEventListener('click', onClick);
+  return button;
 }
 
 export function createTimeline(container, { project, onChange }) {
@@ -23,15 +40,23 @@ export function createTimeline(container, { project, onChange }) {
   let playing = false;
   let playTimer = null;
 
-  const playButton = document.createElement('button');
-  playButton.type = 'button';
-  playButton.className = 'btn btn-icon';
-  attachTooltip(playButton, { title: 'Reproducir', description: 'Anima los fotogramas en bucle' });
+  // Cambios de estructura de fotogramas: siempre como comando deshacible.
+  function runFrameCommand(command) {
+    stopPlayback();
+    execute(project.history, project, command);
+    refreshAll();
+    onChange();
+  }
+
+  const playButton = createIconButton(PLAY_ICON, { title: 'Reproducir', description: 'Anima los fotogramas en bucle' }, () => {
+    if (playing) stopPlayback();
+    else startPlayback();
+  });
 
   function updatePlayButton() {
-    playButton.textContent = playing ? '❚❚' : '▶';
+    playButton.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+    playButton.classList.toggle('is-pressed', playing);
   }
-  updatePlayButton();
 
   function stopPlayback() {
     if (!playing) return;
@@ -51,17 +76,12 @@ export function createTimeline(container, { project, onChange }) {
     }, 1000 / project.fps);
   }
 
-  playButton.addEventListener('click', () => {
-    if (playing) stopPlayback();
-    else startPlayback();
-  });
-
   const fpsButtons = FPS_PRESETS.map((fps) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn';
+    button.className = 'btn btn-fps';
     button.textContent = `${fps}`;
-    attachTooltip(button, { title: `${fps} FPS` });
+    attachTooltip(button, { title: `${fps} FPS`, description: 'Velocidad de reproducción y del GIF exportado' });
     button.addEventListener('click', () => {
       project.fps = fps;
       updateFpsButtons();
@@ -69,6 +89,7 @@ export function createTimeline(container, { project, onChange }) {
         stopPlayback();
         startPlayback();
       }
+      onChange();
     });
     return button;
   });
@@ -78,49 +99,45 @@ export function createTimeline(container, { project, onChange }) {
       button.classList.toggle('is-pressed', Number(button.textContent) === project.fps);
     }
   }
-  updateFpsButtons();
 
-  const addButton = document.createElement('button');
-  addButton.type = 'button';
-  addButton.className = 'btn btn-icon';
-  addButton.textContent = '+';
-  attachTooltip(addButton, { title: 'Duplicar fotograma', description: 'Crea uno nuevo a partir del actual' });
-  addButton.addEventListener('click', () => {
-    stopPlayback();
-    duplicateFrame(project, project.activeFrameIndex);
-    refreshAll();
-    onChange();
-  });
+  const addButton = createIconButton(PLUS_ICON, { title: 'Fotograma vacío', description: 'Añade uno en blanco después del actual' }, () =>
+    runFrameCommand(createAddFrameCommand()),
+  );
 
-  const removeButton = document.createElement('button');
-  removeButton.type = 'button';
-  removeButton.className = 'btn btn-icon';
-  removeButton.textContent = '×';
-  attachTooltip(removeButton, { title: 'Eliminar fotograma', description: 'Borra el fotograma actual' });
-  removeButton.addEventListener('click', () => {
-    stopPlayback();
-    if (!removeFrame(project, project.activeFrameIndex)) return;
-    refreshAll();
-    onChange();
+  const duplicateButton = createIconButton(DUPLICATE_ICON, { title: 'Duplicar fotograma', description: 'Crea uno nuevo a partir del actual' }, () =>
+    runFrameCommand(createDuplicateFrameCommand()),
+  );
+
+  const removeButton = createIconButton(TRASH_ICON, { title: 'Eliminar fotograma', description: 'Borra el fotograma actual (se puede deshacer)' }, () => {
+    if (project.frames.length > 1) runFrameCommand(createRemoveFrameCommand(project.activeFrameIndex));
   });
 
   let onionSkin = false;
-  const onionSkinButton = document.createElement('button');
-  onionSkinButton.type = 'button';
-  onionSkinButton.className = 'btn';
-  onionSkinButton.textContent = 'Cebolla';
-  attachTooltip(onionSkinButton, {
-    title: 'Papel cebolla',
-    description: 'Muestra el fotograma anterior semitransparente como guía',
-  });
-  onionSkinButton.addEventListener('click', () => {
-    onionSkin = !onionSkin;
-    onionSkinButton.classList.toggle('is-pressed', onionSkin);
-    onChange();
-  });
+  const onionSkinButton = createIconButton(
+    ONION_ICON,
+    { title: 'Papel cebolla', description: 'Muestra el fotograma anterior semitransparente como guía' },
+    () => {
+      onionSkin = !onionSkin;
+      onionSkinButton.classList.toggle('is-pressed', onionSkin);
+      onChange();
+    },
+  );
 
-  controlsEl.append(playButton, ...fpsButtons, addButton, removeButton, onionSkinButton);
+  const separator = () => {
+    const el = document.createElement('span');
+    el.className = 'toolbar-separator';
+    return el;
+  };
+
+  controlsEl.append(playButton, ...fpsButtons, separator(), addButton, duplicateButton, removeButton, separator(), onionSkinButton);
   container.append(stripEl, controlsEl);
+
+  // --- Reordenar arrastrando las miniaturas ---
+  let dragIndex = null;
+
+  function clearDropMarkers() {
+    for (const el of stripEl.children) el.classList.remove('is-drop-before', 'is-drop-after', 'is-dragging');
+  }
 
   function refreshAll() {
     stripEl.innerHTML = '';
@@ -128,12 +145,18 @@ export function createTimeline(container, { project, onChange }) {
       const thumbButton = document.createElement('button');
       thumbButton.type = 'button';
       thumbButton.className = 'frame-thumb';
+      thumbButton.draggable = true;
       thumbButton.classList.toggle('is-selected', index === project.activeFrameIndex);
 
       const thumbCanvas = document.createElement('canvas');
       drawThumb(thumbCanvas, frame.doc);
       thumbButton.appendChild(thumbCanvas);
-      attachTooltip(thumbButton, `Fotograma ${index + 1}`);
+
+      const numberEl = document.createElement('span');
+      numberEl.className = 'frame-number';
+      numberEl.textContent = String(index + 1);
+      thumbButton.appendChild(numberEl);
+      attachTooltip(thumbButton, { title: `Fotograma ${index + 1}`, description: 'Arrastra para reordenar' });
 
       thumbButton.addEventListener('click', () => {
         stopPlayback();
@@ -142,10 +165,42 @@ export function createTimeline(container, { project, onChange }) {
         onChange();
       });
 
+      thumbButton.addEventListener('dragstart', (event) => {
+        stopPlayback();
+        dragIndex = index;
+        event.dataTransfer.effectAllowed = 'move';
+        thumbButton.classList.add('is-dragging');
+      });
+      thumbButton.addEventListener('dragover', (event) => {
+        if (dragIndex === null) return;
+        event.preventDefault();
+        const rect = thumbButton.getBoundingClientRect();
+        const after = event.clientX > rect.left + rect.width / 2;
+        clearDropMarkers();
+        thumbButton.classList.add(after ? 'is-drop-after' : 'is-drop-before');
+      });
+      thumbButton.addEventListener('drop', (event) => {
+        event.preventDefault();
+        if (dragIndex === null) return;
+        const rect = thumbButton.getBoundingClientRect();
+        const after = event.clientX > rect.left + rect.width / 2;
+        let target = index + (after ? 1 : 0);
+        if (target > dragIndex) target--;
+        const from = dragIndex;
+        dragIndex = null;
+        clearDropMarkers();
+        if (target !== from) runFrameCommand(createMoveFrameCommand(from, target));
+      });
+      thumbButton.addEventListener('dragend', () => {
+        dragIndex = null;
+        clearDropMarkers();
+      });
+
       stripEl.appendChild(thumbButton);
     });
 
     removeButton.disabled = project.frames.length <= 1;
+    updateFpsButtons();
   }
 
   function refresh() {
@@ -156,6 +211,7 @@ export function createTimeline(container, { project, onChange }) {
     if (activeThumb) drawThumb(activeThumb.querySelector('canvas'), getActiveFrame(project).doc);
   }
 
+  updatePlayButton();
   refreshAll();
 
   return { refresh, refreshAll, stopPlayback, isOnionSkinEnabled: () => onionSkin };

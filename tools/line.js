@@ -1,6 +1,6 @@
 import { createShapeTool } from './shapeTool.js';
-import { lineCells } from '../core/shapes.js';
+import { lineCells, constrainLine } from '../core/shapes.js';
 
 export function createLineTool() {
-  return createShapeTool(lineCells);
+  return createShapeTool({ outline: lineCells, constrain: constrainLine });
 }

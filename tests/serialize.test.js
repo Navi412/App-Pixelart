@@ -46,11 +46,11 @@ test('un píxel transparente no tocado sigue transparente tras el round-trip', (
   assert.deepEqual(getPixel(getActiveFrame(restored).doc.layers[0], 4, 0, 0), { r: 0, g: 0, b: 0, a: 0 });
 });
 
-test('cada fotograma restaurado tiene su propio historial nuevo', () => {
+test('el proyecto restaurado arranca con un historial vacío', () => {
   const project = createProject(4, 4);
   addFrame(project);
 
   const restored = deserializeProject(serializeProject(project));
 
-  assert.notEqual(restored.frames[0].history, restored.frames[1].history);
+  assert.equal(restored.history.undoStack.length, 0);
 });

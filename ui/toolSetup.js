@@ -1,5 +1,6 @@
 import { createToolbar } from './toolbar.js';
 import { attachTooltip } from './tooltip.js';
+import { confirmAction } from './dialog.js';
 import { createPencilTool } from '../tools/pencil.js';
 import { createEraserTool } from '../tools/eraser.js';
 import { createBucketTool } from '../tools/bucket.js';
@@ -68,8 +69,15 @@ export function createToolSetup({ toolbarEl, selectColor, getSelection, setSelec
   clearButton.type = 'button';
   clearButton.className = 'btn btn-icon';
   clearButton.innerHTML = CLEAR_ICON;
-  attachTooltip(clearButton, { title: 'Borrar lienzo', description: 'Limpia toda la capa activa' });
-  clearButton.addEventListener('click', onClear);
+  attachTooltip(clearButton, { title: 'Borrar capa', description: 'Limpia toda la capa activa del fotograma actual' });
+  clearButton.addEventListener('click', async () => {
+    const ok = await confirmAction({
+      title: 'Borrar la capa activa',
+      message: 'Se vaciará la capa en este fotograma. Se puede deshacer con Ctrl+Z.',
+      confirmLabel: 'Borrar',
+    });
+    if (ok) onClear();
+  });
   toolbarEl.appendChild(clearButton);
 
   return {

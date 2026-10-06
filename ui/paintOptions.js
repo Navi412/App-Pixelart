@@ -1,38 +1,46 @@
 import { attachTooltip } from './tooltip.js';
 import { createBrushSizeSlider } from './brushSizeSlider.js';
+import { MIRROR_H_ICON, MIRROR_V_ICON, FILL_SHAPE_ICON } from './icons.js';
 
-function createMirrorButtons(container) {
-  let horizontal = false;
-  let vertical = false;
-
-  const hButton = document.createElement('button');
-  hButton.type = 'button';
-  hButton.className = 'btn btn-icon';
-  hButton.textContent = '↔';
-  attachTooltip(hButton, { title: 'Espejo horizontal', description: 'Refleja el trazo en el eje horizontal' });
-  hButton.addEventListener('click', () => {
-    horizontal = !horizontal;
-    hButton.classList.toggle('is-pressed', horizontal);
+function createToggleButton(container, { icon, tooltip }) {
+  let on = false;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-icon';
+  button.innerHTML = icon;
+  button.setAttribute('aria-pressed', 'false');
+  attachTooltip(button, tooltip);
+  button.addEventListener('click', () => {
+    on = !on;
+    button.classList.toggle('is-pressed', on);
+    button.setAttribute('aria-pressed', String(on));
   });
-
-  const vButton = document.createElement('button');
-  vButton.type = 'button';
-  vButton.className = 'btn btn-icon';
-  vButton.textContent = '↕';
-  attachTooltip(vButton, { title: 'Espejo vertical', description: 'Refleja el trazo en el eje vertical' });
-  vButton.addEventListener('click', () => {
-    vertical = !vertical;
-    vButton.classList.toggle('is-pressed', vertical);
-  });
-
-  container.append(hButton, vButton);
-
-  return () => ({ horizontal, vertical });
+  container.appendChild(button);
+  return () => on;
 }
 
-export function createPaintOptions({ brushSizeEl, mirrorEl }) {
+export function createPaintOptions({ brushSizeEl, optionsEl }) {
   const getBrushSize = createBrushSizeSlider(brushSizeEl);
-  const getMirror = createMirrorButtons(mirrorEl);
 
-  return { getBrushSize, getMirror };
+  const getHorizontal = createToggleButton(optionsEl, {
+    icon: MIRROR_H_ICON,
+    tooltip: { title: 'Espejo horizontal', description: 'Refleja el trazo de izquierda a derecha' },
+  });
+  const getVertical = createToggleButton(optionsEl, {
+    icon: MIRROR_V_ICON,
+    tooltip: { title: 'Espejo vertical', description: 'Refleja el trazo de arriba abajo' },
+  });
+  const getFill = createToggleButton(optionsEl, {
+    icon: FILL_SHAPE_ICON,
+    tooltip: {
+      title: 'Formas rellenas',
+      description: 'Rectángulo y elipse con relleno. Mantén Shift para cuadrado/círculo o línea recta a 45°',
+    },
+  });
+
+  return {
+    getBrushSize,
+    getMirror: () => ({ horizontal: getHorizontal(), vertical: getVertical() }),
+    getFill,
+  };
 }

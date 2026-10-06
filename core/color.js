@@ -23,6 +23,8 @@ export function hsvToRgb(h, s, v) {
   };
 }
 
-export function rgbToHex({ r, g, b }) {
-  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('')}`;
+// Con alfa < 255 añade el canal alfa (#rrggbbaa).
+export function rgbToHex({ r, g, b, a }) {
+  const channels = a !== undefined && a < 255 ? [r, g, b, a] : [r, g, b];
+  return `#${channels.map((n) => n.toString(16).padStart(2, '0')).join('')}`;
 }

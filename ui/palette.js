@@ -21,20 +21,30 @@ function toCss(color) {
   return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a / 255})`;
 }
 
+// Fondo de cuadros bajo el color, para que se note si es semitransparente.
+const CHECKER = 'repeating-conic-gradient(#cccccc 0 25%, #ffffff 0 50%) 0 0 / 10px 10px';
+
 function colorsEqual(a, b) {
   return a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
 }
 
-export function createPalette(container, { colors = DEFAULT_PALETTE, onSelect } = {}) {
-  const buttons = [];
+// onRemove (opcional): con clic derecho sobre un color se pide quitarlo.
+export function createPalette(container, { colors = DEFAULT_PALETTE, onSelect, onRemove } = {}) {
+  let buttons = [];
 
   function createSwatchButton(color) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'swatch';
-    button.style.backgroundColor = toCss(color);
+    button.style.background = color.a < 255 ? `linear-gradient(${toCss(color)}, ${toCss(color)}), ${CHECKER}` : toCss(color);
     button.setAttribute('aria-label', toCss(color));
+    if (onRemove) button.title = 'Clic derecho para eliminar';
     button.addEventListener('click', () => onSelect?.(color));
+    button.addEventListener('contextmenu', (event) => {
+      if (!onRemove) return;
+      event.preventDefault();
+      onRemove(color);
+    });
     container.appendChild(button);
     buttons.push({ color, button });
   }
@@ -53,9 +63,17 @@ export function createPalette(container, { colors = DEFAULT_PALETTE, onSelect } 
     createSwatchButton(color);
   }
 
+  function removeColor(color) {
+    const entry = buttons.find((b) => b.color === color);
+    if (!entry) return;
+    entry.button.remove();
+    buttons = buttons.filter((b) => b !== entry);
+  }
+
   return {
     setActive,
     addColor,
+    removeColor,
     getColors: () => buttons.map((b) => b.color),
   };
 }

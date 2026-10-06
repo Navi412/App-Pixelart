@@ -1,9 +1,12 @@
 import { execute } from '../core/history.js';
-import { createAddLayerCommand } from '../core/document.js';
+import { createProjectAddLayerCommand } from '../core/project.js';
 import { attachTooltip } from './tooltip.js';
+import { showToast } from './toast.js';
 
-export function createImportControls({ button, fileInput, getCurrentFrame, onImported }) {
-  attachTooltip(button, { title: 'Importar imagen', description: 'La añade como una capa nueva' });
+// La imagen entra como capa nueva (en todos los fotogramas, para mantener la
+// misma estructura de capas), con los píxeles solo en el fotograma actual.
+export function createImportControls({ button, fileInput, project, onImported }) {
+  attachTooltip(button, { title: 'Importar imagen', description: 'La añade como una capa nueva en el fotograma actual' });
 
   button.addEventListener('click', () => fileInput.click());
 
@@ -12,18 +15,24 @@ export function createImportControls({ button, fileInput, getCurrentFrame, onImp
     fileInput.value = '';
     if (!file) return;
 
-    const { doc, history } = getCurrentFrame();
-    const bitmap = await createImageBitmap(file);
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(file);
+    } catch {
+      showToast('No se pudo leer la imagen', { kind: 'error' });
+      return;
+    }
 
+    const { width, height } = project;
     const offscreen = document.createElement('canvas');
-    offscreen.width = doc.width;
-    offscreen.height = doc.height;
+    offscreen.width = width;
+    offscreen.height = height;
     const offCtx = offscreen.getContext('2d');
     offCtx.imageSmoothingEnabled = false;
-    offCtx.drawImage(bitmap, 0, 0, doc.width, doc.height);
-    const pixels = offCtx.getImageData(0, 0, doc.width, doc.height).data;
+    offCtx.drawImage(bitmap, 0, 0, width, height);
+    const pixels = offCtx.getImageData(0, 0, width, height).data;
 
-    execute(history, doc, createAddLayerCommand(pixels));
+    execute(project.history, project, createProjectAddLayerCommand(pixels, project.activeFrameIndex));
     onImported();
   });
 }

@@ -82,12 +82,15 @@ function touchProjectEntry(id) {
   }
 }
 
+// Devuelve false si no se pudo guardar (almacenamiento lleno o no disponible),
+// para que la UI pueda avisar en vez de perder el trabajo en silencio.
 export function saveProjectData(id, project) {
   try {
     localStorage.setItem(projectDataKey(id), JSON.stringify(serializeProject(project)));
     touchProjectEntry(id);
+    return true;
   } catch {
-    // Almacenamiento lleno o no disponible: se ignora, no es crítico para seguir dibujando.
+    return false;
   }
 }
 
@@ -113,12 +116,12 @@ export function deleteProjectEntry(id) {
   localStorage.removeItem(projectDataKey(id));
 }
 
-export function createAutosaveScheduler(getActiveProjectIdFn, getProject) {
+export function createAutosaveScheduler(getActiveProjectIdFn, getProject, { onResult } = {}) {
   let timer = null;
   return {
     schedule() {
       clearTimeout(timer);
-      timer = setTimeout(() => saveProjectData(getActiveProjectIdFn(), getProject()), AUTOSAVE_DELAY_MS);
+      timer = setTimeout(() => onResult?.(saveProjectData(getActiveProjectIdFn(), getProject())), AUTOSAVE_DELAY_MS);
     },
   };
 }
@@ -133,7 +136,11 @@ export function loadCustomColors() {
 }
 
 export function saveCustomColors(colors) {
-  localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(colors));
+  try {
+    localStorage.setItem(CUSTOM_COLORS_KEY, JSON.stringify(colors));
+  } catch {
+    // Sin espacio: los colores se pierden al recargar, no es crítico.
+  }
 }
 
 export function loadSidebarState() {
@@ -146,5 +153,29 @@ export function loadSidebarState() {
 }
 
 export function saveSidebarState(state) {
-  localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Sin espacio: la sidebar vuelve a su estado por defecto al recargar.
+  }
+}
+
+// Ojo: index.html lee esta misma clave en un <script> inline del <head> para
+// aplicar el tema antes del primer pintado (sin parpadeo). Si cambia, cambiarla allí también.
+const THEME_KEY = 'pixel-editor.theme';
+
+export function loadTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+export function saveTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // Sin almacenamiento: el tema se pierde al recargar, no es crítico.
+  }
 }

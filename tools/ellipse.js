@@ -1,6 +1,6 @@
 import { createShapeTool } from './shapeTool.js';
-import { ellipseOutlineCells } from '../core/shapes.js';
+import { ellipseOutlineCells, ellipseFilledCells, constrainSquare } from '../core/shapes.js';
 
 export function createEllipseTool() {
-  return createShapeTool(ellipseOutlineCells);
+  return createShapeTool({ outline: ellipseOutlineCells, filled: ellipseFilledCells, constrain: constrainSquare });
 }

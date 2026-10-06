@@ -67,10 +67,11 @@ test('removeFrame no deja el proyecto sin fotogramas', () => {
   assert.equal(project.frames.length, 1);
 });
 
-test('cada fotograma tiene su propio historial independiente', () => {
+test('el proyecto tiene un único historial compartido por todos los fotogramas', () => {
   const project = createProject(4, 4);
   addFrame(project);
-  assert.notEqual(project.frames[0].history, project.frames[1].history);
+  assert.ok(project.history);
+  assert.equal(project.frames[1].history, undefined);
 });
 
 test('resizeProject actualiza el tamaño del proyecto y de todos los fotogramas', () => {
