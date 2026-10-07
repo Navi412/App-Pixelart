@@ -229,24 +229,32 @@ createExportControls({
 
 // --- Render + wiring de entrada ---
 
-function redraw() {
+let pointer = null;
+
+// Solo el lienzo: es lo que se repinta al mover el puntero sin dibujar (huella de la herramienta).
+function renderCanvas() {
   const activeTool = toolSetup.getActiveTool();
   const onionSkinDoc =
     timeline.isOnionSkinEnabled() && project.activeFrameIndex > 0 ? project.frames[project.activeFrameIndex - 1].doc : null;
 
   render(ctx, currentFrame().doc, zoomControls.getZoom(), {
     overlay: activeTool.getPreview ? activeTool.getPreview() : null,
+    cursor: pointer?.getCursor(),
     selectionRect: selection,
     onionSkinDoc,
     grid: zoomControls.isGridEnabled(),
   });
+}
+
+function redraw() {
+  renderCanvas();
   layersPanel.refresh();
   timeline.refresh();
   selectionActions.refresh();
   autosave.schedule();
 }
 
-bindPointerEvents(
+pointer = bindPointerEvents(
   canvas,
   () => toolSetup.getActiveTool(),
   {
@@ -259,6 +267,7 @@ bindPointerEvents(
     getZoom: zoomControls.getZoom,
   },
   redraw,
+  renderCanvas,
 );
 
 // Deshacer/rehacer: si el cambio era de otro fotograma, se salta a él para verlo.

@@ -12,5 +12,10 @@ export function createEyedropperTool(onPick) {
     onPointerDown: pick,
     onPointerMove: pick,
     onPointerUp() {},
+    getCursor(context, x, y) {
+      const { doc } = context;
+      if (x < 0 || y < 0 || x >= doc.width || y >= doc.height) return null;
+      return { cells: [{ x, y }], color: null };
+    },
   };
 }

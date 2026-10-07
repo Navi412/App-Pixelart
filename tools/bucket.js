@@ -70,5 +70,9 @@ export function createBucketTool() {
     },
     onPointerMove() {},
     onPointerUp() {},
+    getCursor(context, x, y) {
+      const { doc, mirror, color } = context;
+      return { cells: mirrorCells([{ x, y }], doc.width, doc.height, mirror), color };
+    },
   };
 }

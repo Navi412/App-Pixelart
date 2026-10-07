@@ -76,5 +76,11 @@ export function createPaintTool(resolveColor) {
       stroke = null;
       last = null;
     },
+    // Huella del pincel bajo el puntero (con espejo). Solo se rellena con color
+    // si pinta algo visible; la goma muestra únicamente el contorno.
+    getCursor(context, x, y) {
+      const color = resolveColor(context);
+      return { cells: cellsAt(context, x, y), color: color.a > 0 ? color : null };
+    },
   };
 }

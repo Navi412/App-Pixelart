@@ -71,6 +71,11 @@ export function createShapeTool({ outline, filled = null, constrain = null }) {
       start = null;
       current = null;
     },
+    // Las formas no usan grosor: la huella es el píxel bajo el puntero (con espejo).
+    getCursor(context, x, y) {
+      const { doc, mirror, color } = context;
+      return { cells: mirrorCells([{ x, y }], doc.width, doc.height, mirror), color };
+    },
     getPreview() {
       if (!start || !current) return null;
       return shapeCells(preview).map((c) => ({ ...c, color: preview.color }));

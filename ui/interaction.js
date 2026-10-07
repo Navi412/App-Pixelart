@@ -1,5 +1,19 @@
-export function bindPointerEvents(canvasEl, getTool, { getDoc, getHistory, getColor, getBrushSize, getMirror, getFill, getZoom }, onChange) {
+export function bindPointerEvents(
+  canvasEl,
+  getTool,
+  { getDoc, getHistory, getColor, getBrushSize, getMirror, getFill, getZoom },
+  onChange,
+  onHover = () => {},
+) {
   let drawing = false;
+  // Celda bajo el puntero (null fuera del lienzo): sirve para la huella de la herramienta.
+  let hover = null;
+
+  function setHover(next) {
+    if (hover?.x === next?.x && hover?.y === next?.y) return false;
+    hover = next;
+    return true;
+  }
 
   function toDocCoords(event) {
     const rect = canvasEl.getBoundingClientRect();
@@ -42,19 +56,40 @@ export function bindPointerEvents(canvasEl, getTool, { getDoc, getHistory, getCo
   // herramienta recorta lo suyo, y así un trazo que sale y vuelve a entrar no
   // deja huecos.
   canvasEl.addEventListener('pointermove', (event) => {
-    if (!drawing) return;
     const { x, y } = toDocCoords(event);
+    const hoverChanged = setHover(inBounds(getDoc(), x, y) ? { x, y } : null);
+    if (!drawing) {
+      // Sin arrastrar solo cambia la huella: basta repintar el lienzo.
+      if (hoverChanged) onHover();
+      return;
+    }
     getTool().onPointerMove(toolContext(event), x, y);
     onChange();
+  });
+
+  canvasEl.addEventListener('pointerleave', () => {
+    if (!drawing && setHover(null)) onHover();
   });
 
   function stop(event) {
     if (!drawing) return;
     drawing = false;
     getTool().onPointerUp(toolContext(event));
+    // Con el puntero capturado, al soltar fuera del lienzo no llega pointerleave.
+    const { x, y } = toDocCoords(event);
+    if (!inBounds(getDoc(), x, y)) setHover(null);
     onChange();
   }
 
   canvasEl.addEventListener('pointerup', stop);
   canvasEl.addEventListener('pointercancel', stop);
+
+  return {
+    // Huella de la herramienta activa en la celda bajo el puntero: { cells, color } o null.
+    getCursor() {
+      const tool = getTool();
+      if (!hover || !tool.getCursor) return null;
+      return tool.getCursor(toolContext(), hover.x, hover.y);
+    },
+  };
 }

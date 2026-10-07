@@ -38,6 +38,45 @@ function drawOverlay(ctx, overlay, zoom) {
   }
 }
 
+const CURSOR_FILL_ALPHA = 0.5;
+
+// Huella de la herramienta: relleno translúcido con el color (si lo hay) y el
+// contorno de la zona afectada en negro + blanco, para que se vea sobre cualquier fondo.
+function drawCursor(ctx, { cells, color }, zoom) {
+  if (color) {
+    ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${(color.a / 255) * CURSOR_FILL_ALPHA})`;
+    for (const { x, y } of cells) ctx.fillRect(x * zoom, y * zoom, zoom, zoom);
+  }
+
+  const inside = new Set(cells.map(({ x, y }) => `${x},${y}`));
+  const edges = [];
+  for (const { x, y } of cells) {
+    if (!inside.has(`${x},${y - 1}`)) edges.push({ x, y, side: 'top' });
+    if (!inside.has(`${x},${y + 1}`)) edges.push({ x, y, side: 'bottom' });
+    if (!inside.has(`${x - 1},${y}`)) edges.push({ x, y, side: 'left' });
+    if (!inside.has(`${x + 1},${y}`)) edges.push({ x, y, side: 'right' });
+  }
+
+  // offset 0 = borde exterior de la celda (negro), 1 = justo por dentro (blanco).
+  const strokeEdges = (offset) => {
+    for (const { x, y, side } of edges) {
+      const px = x * zoom;
+      const py = y * zoom;
+      if (side === 'top') ctx.fillRect(px, py + offset, zoom, 1);
+      else if (side === 'bottom') ctx.fillRect(px, py + zoom - 1 - offset, zoom, 1);
+      else if (side === 'left') ctx.fillRect(px + offset, py, 1, zoom);
+      else ctx.fillRect(px + zoom - 1 - offset, py, 1, zoom);
+    }
+  };
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+  strokeEdges(0);
+  if (zoom >= 4) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    strokeEdges(1);
+  }
+}
+
 function drawGrid(ctx, doc, zoom) {
   ctx.fillStyle = GRID_COLOR;
   for (let x = 1; x < doc.width; x++) ctx.fillRect(x * zoom, 0, 1, doc.height * zoom);
@@ -52,7 +91,7 @@ function drawSelection(ctx, selectionRect, zoom) {
   ctx.strokeRect(x * zoom + 1, y * zoom + 1, width * zoom - 2, height * zoom - 2);
 }
 
-export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc, grid } = {}) {
+export function render(ctx, doc, zoom, { overlay, cursor, selectionRect, onionSkinDoc, grid } = {}) {
   const pxWidth = doc.width * zoom;
   const pxHeight = doc.height * zoom;
 
@@ -69,4 +108,5 @@ export function render(ctx, doc, zoom, { overlay, selectionRect, onionSkinDoc, g
   if (overlay) drawOverlay(ctx, overlay, zoom);
   if (grid && zoom >= GRID_MIN_ZOOM) drawGrid(ctx, doc, zoom);
   if (selectionRect) drawSelection(ctx, selectionRect, zoom);
+  if (cursor?.cells.length) drawCursor(ctx, cursor, zoom);
 }

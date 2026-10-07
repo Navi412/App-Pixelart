@@ -9,6 +9,10 @@ ejecutar como app de escritorio con Electron (`npm start`) — ver sección
 - El canvas es solo salida: se re-renderiza componiendo capas.
 - imageSmoothingEnabled = false SIEMPRE (si no, los píxeles salen borrosos).
 - Las herramientas son módulos con la misma interfaz: onPointerDown/Move/Up.
+  Opcional: `getPreview()` (forma en curso) y `getCursor(context, x, y)` →
+  `{ cells, color }`, la huella que se dibuja bajo el puntero al pasar por el
+  lienzo (`color: null` = solo contorno, p. ej. la goma). Mover el puntero sin
+  dibujar solo repinta el lienzo (`renderCanvas` en main.js), no los paneles.
 - Toda mutación del documento pasa por el sistema de comandos (undo/redo).
   Nada modifica píxeles directamente desde la UI.
 - Contrato de comando (core/history.js): objeto { do(target), undo(target) }.
